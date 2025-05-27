@@ -1,6 +1,6 @@
-# matrix-shift
+# matrix-shuffler
 
-Matrix Shift is a web app for matrix reordering
+Matrix Shuffler is a web app for matrix reordering
 
 ## Recommended IDE Setup
 
