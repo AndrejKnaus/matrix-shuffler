@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch } from 'vue'
-import { Application, Container, Graphics, Text } from 'pixi.js'
+import { Application, Container, Graphics, Text, HTMLText } from 'pixi.js'
 import { useDatasetStore, type DataRow } from '@/stores/dataset'
 
 const props = defineProps({
@@ -535,16 +535,6 @@ function renderMatrix(matrixSize: number, cellSize: number, padding: number, con
       const normalizedValue = value / 100 // Assuming values are between 0-100
       const alpha = 0.2 + normalizedValue * 0.8 // Scale from 0.2 to 1.0
 
-      /**
-      const text = new Text(value.toString(), {
-        fontFamily: 'Arial',
-        fontSize: 14,
-        fill: 0x000000,
-      })
-      text.anchor.set(0.5)
-      text.x = cellSize / 2
-      text.y = cellSize / 2
-       */
       const enableCircleEncoding: 'circle' | 'color' | 'both' = 'color'
 
       if (enableCircleEncoding === 'circle') {
@@ -574,8 +564,21 @@ function renderMatrix(matrixSize: number, cellSize: number, padding: number, con
         cell.addChild(valueIndicator)
       }
 
+      const text = new HTMLText({
+        text: value.toString(),
+        style: {
+          fontFamily: 'Arial',
+          align: 'center',
+          fontSize: 14,
+          fill: '#000000',
+        },
+      })
+      text.anchor.set(0.5)
+      text.x = cellSize / 2
+      text.y = cellSize / 2
+
       cell.addChild(rect)
-      //cell.addChild(text)
+      cell.addChild(text)
       cell.x = col * (cellSize + padding)
       rowContainer.addChild(cell)
 
