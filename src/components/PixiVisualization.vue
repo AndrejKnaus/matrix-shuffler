@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch } from 'vue'
-import { Application, Container, Graphics, Text, HTMLText } from 'pixi.js'
+import { Application, Container, Graphics, Text, HTMLText, BitmapText } from 'pixi.js'
 import { useDatasetStore, type DataRow } from '@/stores/dataset'
 
 const props = defineProps({
@@ -535,7 +535,7 @@ function renderMatrix(matrixSize: number, cellSize: number, padding: number, con
       const normalizedValue = value / 100 // Assuming values are between 0-100
       const alpha = 0.2 + normalizedValue * 0.8 // Scale from 0.2 to 1.0
 
-      const enableCircleEncoding: 'circle' | 'color' | 'both' = 'color'
+      const enableCircleEncoding: 'circle' | 'color' | 'both' | 'color-text' = 'color'
 
       if (enableCircleEncoding === 'circle') {
         rect.setStrokeStyle({ width: 1, color: 0x007acc })
@@ -547,11 +547,32 @@ function renderMatrix(matrixSize: number, cellSize: number, padding: number, con
         valueIndicator.circle(cellSize / 2, cellSize / 2, normalizedValue * (cellSize / 3))
         valueIndicator.endFill()
         cell.addChild(valueIndicator)
+        cell.addChild(rect)
       } else if (enableCircleEncoding === 'color') {
         rect.setStrokeStyle({ width: 1, color: 0x007acc })
         rect.fill({ color: 0x007acc, alpha: alpha })
         rect.rect(0, 0, cellSize, cellSize)
         rect.endFill() // seems to be necessary to finalize the fill
+        cell.addChild(rect)
+      } else if (enableCircleEncoding === 'color-text') {
+        rect.setStrokeStyle({ width: 1, color: 0x007acc })
+        rect.fill({ color: 0x007acc, alpha: alpha })
+        rect.rect(0, 0, cellSize, cellSize)
+        rect.endFill() // seems to be necessary to finalize the fill
+        const text = new BitmapText({
+          text: value.toString(),
+          style: {
+            fontFamily: 'Arial',
+            align: 'center',
+            fontSize: 14,
+            fill: '#000000',
+          },
+        })
+        text.anchor.set(0.5)
+        text.x = cellSize / 2
+        text.y = cellSize / 2
+        cell.addChild(rect)
+        cell.addChild(text)
       } else if (enableCircleEncoding === 'both') {
         rect.setStrokeStyle({ width: 1, color: 0x007acc })
         rect.fill({ color: 0x007acc, alpha: alpha })
@@ -562,23 +583,9 @@ function renderMatrix(matrixSize: number, cellSize: number, padding: number, con
         valueIndicator.circle(cellSize / 2, cellSize / 2, normalizedValue * (cellSize / 3))
         valueIndicator.endFill()
         cell.addChild(valueIndicator)
+        cell.addChild(rect)
       }
 
-      const text = new HTMLText({
-        text: value.toString(),
-        style: {
-          fontFamily: 'Arial',
-          align: 'center',
-          fontSize: 14,
-          fill: '#000000',
-        },
-      })
-      text.anchor.set(0.5)
-      text.x = cellSize / 2
-      text.y = cellSize / 2
-
-      cell.addChild(rect)
-      cell.addChild(text)
       cell.x = col * (cellSize + padding)
       rowContainer.addChild(cell)
 
@@ -633,11 +640,6 @@ onMounted(() => {
   setTimeout(() => {
     initializePixi()
   }, 100)
-
-  // Add a colored border to the container for debugging
-  if (containerRef.value) {
-    containerRef.value.style.border = '3px solid red'
-  }
 })
 
 onUnmounted(() => {
