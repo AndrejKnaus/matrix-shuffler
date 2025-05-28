@@ -538,25 +538,25 @@ function renderMatrix(matrixSize: number, cellSize: number, padding: number, con
       const enableCircleEncoding: 'circle' | 'color' | 'both' | 'color-text' = 'color'
 
       if (enableCircleEncoding === 'circle') {
-        rect.setStrokeStyle({ width: 1, color: 0x007acc })
+        rect.setStrokeStyle({ width: 1, color: 0x404040 })
         rect.fill({ color: 0xfff, alpha: 0 })
         rect.rect(0, 0, cellSize, cellSize)
         rect.endFill() // seems to be necessary to finalize the fill
         const valueIndicator = new Graphics()
-        valueIndicator.fill({ color: 0x007acc, alpha: 0.8 })
+        valueIndicator.fill({ color: 0x404040, alpha: 0.9 })
         valueIndicator.circle(cellSize / 2, cellSize / 2, normalizedValue * (cellSize / 3))
         valueIndicator.endFill()
         cell.addChild(valueIndicator)
         cell.addChild(rect)
       } else if (enableCircleEncoding === 'color') {
-        rect.setStrokeStyle({ width: 1, color: 0x007acc })
-        rect.fill({ color: 0x007acc, alpha: alpha })
+        rect.setStrokeStyle({ width: 1, color: 0x404040 })
+        rect.fill({ color: 0x404040, alpha: alpha * 1.2 })
         rect.rect(0, 0, cellSize, cellSize)
         rect.endFill() // seems to be necessary to finalize the fill
         cell.addChild(rect)
       } else if (enableCircleEncoding === 'color-text') {
-        rect.setStrokeStyle({ width: 1, color: 0x007acc })
-        rect.fill({ color: 0x007acc, alpha: alpha })
+        rect.setStrokeStyle({ width: 1, color: 0x404040 })
+        rect.fill({ color: 0x404040, alpha: alpha * 1.2 })
         rect.rect(0, 0, cellSize, cellSize)
         rect.endFill() // seems to be necessary to finalize the fill
         const text = new BitmapText({
@@ -574,12 +574,12 @@ function renderMatrix(matrixSize: number, cellSize: number, padding: number, con
         cell.addChild(rect)
         cell.addChild(text)
       } else if (enableCircleEncoding === 'both') {
-        rect.setStrokeStyle({ width: 1, color: 0x007acc })
-        rect.fill({ color: 0x007acc, alpha: alpha })
+        rect.setStrokeStyle({ width: 1, color: 0x404040 })
+        rect.fill({ color: 0x404040, alpha: alpha * 1.2 })
         rect.rect(0, 0, cellSize, cellSize)
         rect.endFill() // seems to be necessary to finalize the fill
         const valueIndicator = new Graphics()
-        valueIndicator.fill({ color: 0x007acc, alpha: 0.8 })
+        valueIndicator.fill({ color: 0x404040, alpha: 0.9 })
         valueIndicator.circle(cellSize / 2, cellSize / 2, normalizedValue * (cellSize / 3))
         valueIndicator.endFill()
         cell.addChild(valueIndicator)
