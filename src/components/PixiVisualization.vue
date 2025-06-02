@@ -220,7 +220,7 @@ const setupDragHandling = (cellSize: number, padding: number) => {
           tooltip.value = {
             x: event.global.x + 10,
             y: event.global.y + 10,
-            content: `Row: ${cellInfo.row}\nColumn: ${cellInfo.column}\nValue: ${cellInfo.initialValue}\nNormalized: ${cellInfo.normalizedValue ?? '-'}`,
+            content: `Row: ${cellInfo.row}\nColumn: ${cellInfo.column}\nValue: ${cellInfo.initialValue}\nNormalized: ${roundTooltipNumber(cellInfo.normalizedValue)}`,
           }
         } else if (isPanning.value) {
           cell.cursor = 'grabbing'
@@ -601,6 +601,10 @@ const resetCellPositions = (cellSize: number, padding: number) => {
   })
 }
 
+const roundTooltipNumber = (value: number | undefined): string => {
+  return value !== undefined ? Number(value.toFixed(3)).toString() : '-'
+}
+
 const handleKeyDown = (e: KeyboardEvent) => {
   if (e.metaKey || e.altKey) {
     isTooltipModifierPressed.value = true
@@ -609,7 +613,7 @@ const handleKeyDown = (e: KeyboardEvent) => {
       tooltip.value = {
         x: event.global.x + 10,
         y: event.global.y + 10,
-        content: `Row: ${cellInfo.row}\nColumn: ${cellInfo.column}\nValue: ${cellInfo.initialValue}\nNormalized: ${cellInfo.normalizedValue ?? '-'}`,
+        content: `Row: ${cellInfo.row}\nColumn: ${cellInfo.column}\nValue: ${cellInfo.initialValue}\nNormalized: ${roundTooltipNumber(cellInfo.normalizedValue)}`,
       }
     }
   }
@@ -765,12 +769,13 @@ onUnmounted(() => {
 .pixi-tooltip {
   position: absolute;
   pointer-events: none;
-  background: #222;
-  color: #fff;
+  background: #fff;
+  color: #222;
   padding: 6px 10px;
   border-radius: 4px;
   font-size: 13px;
   z-index: 1000;
   white-space: pre;
+  border: #222 solid 0.5px;
 }
 </style>
