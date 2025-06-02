@@ -1,107 +1,141 @@
 import { defineStore } from 'pinia'
-import * as d3 from 'd3'
 
-export interface DataRow extends Record<string, any> {}
+export interface MatrixCell {
+  row: string
+  column: string
+  initialValue: number
+  normalizedValue?: number
+}
+
+export interface MatrixData {
+  rowNames: string[]
+  columnNames: string[]
+  values: MatrixCell[][]
+}
+
+export interface NormalizationState {
+  type: 'none' | 'row' | 'column'
+  min: number
+  max: number
+}
 
 export const useDatasetStore = defineStore('dataset', {
   state: () => ({
-    fileName: null as string | null,
-    rawData: null as string | null,
-    parsedData: null as DataRow[] | null,
-    error: null as string | null,
-    delimiter: '' as string,
+    rowNames: [] as string[],
+    columnNames: [] as string[],
+    initialData: [] as number[][], // Raw parsed data
+    normalizationType: 'none' as 'none' | 'row' | 'column', // Normalization type
+    normalizationRanges: {} as Record<string, 'zero-max' | 'min-max'>, // key: row/col name
+    normalizedData: [] as number[][], // Normalized data
+    rowOrder: [] as number[], // Current row order (saved as index of rowNames)
+    columnOrder: [] as number[], // Current column order (saved as index of columnNames)
+    hasData: Boolean(false), // Flag to check if data is set
   }),
   actions: {
-    async loadFile(file: File) {
-      this.fileName = file.name
-      this.error = null
-      this.parsedData = null
-      this.rawData = null
-      this.delimiter = ''
+    setParsedData(rowNames: string[], columnNames: string[], data: number[][]) {
+      this.rowNames = rowNames
+      this.columnNames = columnNames
+      this.initialData = data
+      this.normalizationType = 'none' // Reset normalization type
+      this.normalizationRanges = {} // Reset normalization ranges
+      this.normalizedData = [] // Reset normalized data
+      this.rowOrder = rowNames.map((name) => rowNames.indexOf(name))
+      this.columnOrder = columnNames.map((name) => columnNames.indexOf(name))
+      this.hasData = true
+      console.log(`Data set with ${rowNames.length} rows and ${columnNames.length} columns.`)
+    },
+    setNormalizationType(type: 'none' | 'row' | 'column') {
+      this.normalizationType = type
+      this.normalizationRanges = {} // Reset ranges when changing type
+    },
+    setNormalizationRange(key: string, range: 'zero-max' | 'min-max') {
+      this.normalizationRanges[key] = range
+    },
+    normalizeData() {
+      if (this.normalizationType === 'none') {
+        this.normalizedData = []
+        return
+      }
 
-      const reader = new FileReader()
+      const data = this.initialData
+      const numRows = data.length
+      const numCols = data[0]?.length ?? 0
+      const normalized: number[][] = []
 
-      reader.onload = (e) => {
-        try {
-          const text = e.target?.result as string
-          this.rawData = text
-          const fileExtension = file.name.split('.').pop()?.toLowerCase()
-
-          if (fileExtension === 'csv') {
-            this.delimiter = ','
-            this.parsedData = d3.csvParse(text, d3.autoType)
-          } else if (fileExtension === 'tsv') {
-            this.delimiter = '\t'
-            this.parsedData = d3.tsvParse(text, d3.autoType)
-            /**}
-          else if (fileExtension === 'json') {
-            const jsonData = JSON.parse(text)
-            if (Array.isArray(jsonData)) {
-                this.parsedData = jsonData.map(row => {
-                    // Ensure all parsed JSON objects are treated consistently by d3.autoType logic if needed later
-                    // For now, direct assignment is fine.
-                    const typedRow: DataRow = {};
-                    for (const key in row) {
-                        typedRow[key] = row[key]; // JSON types are preserved
-                    }
-                    return typedRow;
-                });
-            } else if (typeof jsonData === 'object' && jsonData !== null) {
-                this.parsedData = [jsonData as DataRow]
-                console.warn('Loaded JSON data is a single object, wrapped in an array.')
+      if (this.normalizationType === 'row') {
+        for (let i = 0; i < numRows; i++) {
+          const row = data[i]
+          const rangeType = this.normalizationRanges[this.rowNames[i]] || 'min-max'
+          const min = Math.min(...row)
+          const max = Math.max(...row)
+          console.log(
+            `Normalizing row ${this.rowNames[i]}: min=${min}, max=${max}, rangeType=${rangeType}`,
+          )
+          normalized[i] = row.map((val) => {
+            if (rangeType === 'min-max') {
+              return max !== min ? (val - min) / (max - min) : 0
             } else {
-                throw new Error('JSON data is not in a recognized format (array of objects or object).')
+              return max !== 0 ? val / max : 0
             }
-          **/
-          } else {
-            this.error = `Unsupported file type for D3 parsing: ${fileExtension}`
-            return
+          })
+        }
+      } else if (this.normalizationType === 'column') {
+        for (let j = 0; j < numCols; j++) {
+          const col = data.map((row) => row[j])
+          const rangeType = this.normalizationRanges[this.columnNames[j]] || 'min-max'
+          const min = Math.min(...col)
+          const max = Math.max(...col)
+          console.log(
+            `Normalizing column ${this.columnNames[j]}: min=${min}, max=${max}, rangeType=${rangeType}`,
+          )
+          for (let i = 0; i < numRows; i++) {
+            if (!normalized[i]) normalized[i] = []
+            if (rangeType === 'min-max') {
+              normalized[i][j] = max !== min ? (data[i][j] - min) / (max - min) : 0
+            } else {
+              normalized[i][j] = max !== 0 ? data[i][j] / max : 0
+            }
           }
-
-          if (this.parsedData && this.parsedData.length === 0) {
-            this.error = 'File is empty or could not be parsed into data rows.'
-            this.parsedData = null
-          }
-        } catch (err) {
-          console.error('Error processing file in store:', err)
-          this.error =
-            err instanceof Error
-              ? `Error processing file: ${err.message}`
-              : 'An unknown error occurred.'
-          this.parsedData = null
-          this.rawData = null
         }
       }
-
-      reader.onerror = () => {
-        this.error = 'Failed to read file.'
-        this.rawData = null
-        this.parsedData = null
-      }
-
-      reader.readAsText(file)
+      console.log('Normalization complete:', normalized)
+      this.normalizedData = normalized
     },
-    clearData() {
-      this.fileName = null
-      this.rawData = null
-      this.parsedData = null
-      this.error = null
-      this.delimiter = ''
+    setRowOrder(order: number[]) {
+      this.rowOrder = order
+    },
+    setColumnOrder(order: number[]) {
+      this.columnOrder = order
+    },
+    reset() {
+      this.initialData = []
+      this.normalizedData = []
+      this.rowOrder = []
+      this.columnOrder = []
+      this.hasData = false
+    },
+    resetOrder() {
+      this.rowOrder = this.rowNames.map((name) => this.rowNames.indexOf(name))
+      this.columnOrder = this.columnNames.map((name) => this.columnNames.indexOf(name))
     },
   },
   getters: {
-    hasData: (state) => state.parsedData !== null && state.parsedData.length > 0,
-    columnNames: (state): string[] => {
-      if (state.parsedData && state.parsedData.length > 0) {
-        // For d3.csvParse/tsvParse with autoType, columns are on the parsed array
-        if ((state.parsedData as any).columns) {
-          return (state.parsedData as any).columns
-        }
-        // Fallback for JSON or other array of objects
-        return Object.keys(state.parsedData[0])
+    // Returns the current matrix (normalized if available, else initial), in the current order
+    currentMatrix: (state): MatrixData => {
+      const values: MatrixCell[][] = state.rowOrder.map((rowIdx) =>
+        state.columnOrder.map((colIdx) => ({
+          row: state.rowNames[rowIdx],
+          column: state.columnNames[colIdx],
+          initialValue: state.initialData[rowIdx]?.[colIdx] ?? 0,
+          normalizedValue:
+            state.normalizedData.length > 0 ? state.normalizedData[rowIdx]?.[colIdx] : undefined,
+        })),
+      )
+      return {
+        rowNames: state.rowOrder.map((i) => state.rowNames[i]),
+        columnNames: state.columnOrder.map((i) => state.columnNames[i]),
+        values: values,
       }
-      return []
     },
-    rowCount: (state) => state.parsedData?.length || 0,
   },
 })
