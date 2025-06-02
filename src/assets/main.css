@@ -1,16 +1,44 @@
 @import './base.css';
 
+:root {
+  --color-primary: hsla(160, 60%, 32%, 1); /* softer, less saturated teal */
+  --color-primary-light: hsla(160, 60%, 42%, 1); /* lighter variant */
+  --color-primary-dark: hsla(160, 60%, 22%, 1); /* darker variant */
+
+  --color-background: #f6faf8; /* very light greenish background */
+  --color-background-soft: #e9f3ef; /* soft, muted background */
+
+  --color-on-hover: #fafafa; /* dark blue-grey for hover */
+  --color-accent: #b2dfdb; /* accent: soft teal */
+  --color-border: #cfd8dc; /* light border */
+  --color-text: #263238; /* dark blue-grey for text */
+  --color-text-light: #fff;
+}
+
+html,
+body,
 #app {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  font-weight: normal;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+#app {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
 }
 
 a,
 .green {
   text-decoration: none;
-  color: hsla(160, 100%, 37%, 1);
+  color: var(--color-primary-light);
   transition: 0.4s;
   padding: 3px;
 }
@@ -30,6 +58,6 @@ a,
   #app {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    padding: 0 2rem;
+    padding: 0;
   }
 }
