@@ -1,31 +1,24 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import HelloWorld from './components/HelloWorld.vue'
-import PixiVisualization from './components/PixiVisualization.vue'
-
-const showViews = ref(false)
-const selectedView = ref('matrix')
-
-const showSettingsBar = ref(false)
-const currentSettingsType = ref<string | null>(null) // e.g., 'circlesViewSettings', 'rawDataSettings'
+import Introduction from './components/Introduction.vue'
+import PixiVisualizationWrapper from './components/PixiVisualizationWrapper.vue'
+import { useVisualizationStore } from './stores/visualization'
+import type { VisualizationEncoding } from './types/visualizationConfig'
 
 const showImportModal = ref(false) // New ref for modal visibility
 
-function openViewSettings(viewType: string) {
-  selectedView.value = viewType // Assuming you have this for the main content
-  currentSettingsType.value = `${viewType}Settings`
-  showSettingsBar.value = true
-  // Potentially hide settings bar if the same view's settings are clicked again
+const visualizationStore = useVisualizationStore()
+
+const setEncoding = (encoding: VisualizationEncoding) => {
+  visualizationStore.setEncoding(encoding)
 }
 
 function handleImportData() {
-  // Logic to show an import modal
-  console.log('Show import modal')
-  showImportModal.value = true // Open the modal
+  showImportModal.value = true
 }
 
 function closeImportModal() {
-  showImportModal.value = false // Close the modal
+  showImportModal.value = false
 }
 </script>
 
@@ -47,9 +40,10 @@ function closeImportModal() {
           <li class="dropdown">
             <a href="#" class="dropbtn">View</a>
             <div class="dropdown-content">
-              <a href="#" @click.prevent="openViewSettings('rawData')">Display as Raw Data</a>
-              <a href="#" @click.prevent="openViewSettings('circles')">Display as Circles</a>
-              <a href="#">etc.</a>
+              <a href="#" @click.prevent="setEncoding('circle')">Display as Circles</a>
+              <a href="#" @click.prevent="setEncoding('color')">Display as Colors</a>
+              <a href="#" @click.prevent="setEncoding('circle-color')">Display as Circle+Color</a>
+              <a href="#" @click.prevent="setEncoding('color-text')">Display as Color+Text</a>
             </div>
           </li>
           <li class="dropdown">
@@ -75,7 +69,7 @@ function closeImportModal() {
       <!--<img alt="Vue logo" class="logo" src="@/assets/logo.svg" width="125" height="125" />-->
 
       <div class="wrapper">
-        <HelloWorld msg="Welcome to Matrix Shuffler!" />
+        <Introduction msg="Welcome to Matrix Shuffler!" />
 
         <!--
         <nav>
@@ -85,14 +79,7 @@ function closeImportModal() {
         -->
         <!-- PixiJS Visualization View -->
         <div class="visualization-view">
-          <PixiVisualization
-            :width="800"
-            :height="600"
-            :matrixSize="10"
-            :cellSize="40"
-            :padding="2"
-            :useRandomData="true"
-          />
+          <PixiVisualizationWrapper :useRandomData="true" :matrixSize="10" />
         </div>
       </div>
     </main>
@@ -130,16 +117,18 @@ function closeImportModal() {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  width: 100vw;
+  overflow: hidden;
 }
 
 .app-header {
   width: 100%;
-  background-color: #333; /* Example background color */
+  background-color: var(--color-primary);
   color: white;
-  position: fixed; /* Fixes the header at the top */
+  position: fixed;
   top: 0;
   left: 0;
-  z-index: 1000; /* Ensures header is above other content */
+  z-index: 1000;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
@@ -165,14 +154,16 @@ function closeImportModal() {
 
 .main-nav li a:hover,
 .dropdown:hover .dropbtn {
-  background-color: #555; /* Darker background on hover */
+  background-color: var(--color-primary-light);
+  color: var(--color-on-hover);
+  transition: 0.1s;
 }
 
 /* Dropdown Content (Hidden by Default) */
 .dropdown-content {
   display: none;
   position: absolute;
-  background-color: #f9f9f9;
+  background-color: var(--color-background-soft);
   min-width: 160px;
   box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
   z-index: 1;
@@ -198,17 +189,15 @@ function closeImportModal() {
 }
 
 .content-area {
-  margin-top: 60px; /* Adjust this value based on the actual height of your fixed header */
-  padding: 1rem;
-  overflow-y: auto; /* If content might overflow */
-  flex-grow: 1;
-}
-
-/* Original styles, may need adjustment based on new layout */
-header {
-  /* This was the old header, now .content-area might take its role for some styles */
-  line-height: 1.5;
-  /* max-height: 100vh; Removed as .app-container and .content-area handle height */
+  flex: 1 1 0;
+  width: 100%;
+  height: calc(100vh - 60px); /* header height */
+  margin-top: 60px; /* header height */
+  padding: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
 }
 
 .logo {
@@ -273,23 +262,23 @@ header {
   border: 1px solid #4caf50;
 }
 
-@media (min-width: 1024px) {
-  .content-area header {
-    /* Targeting the old header element if it's still used inside content-area */
-    display: flex;
-    place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
-  }
+.visualization-view {
+  flex: 1 1 0;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+}
 
-  .logo {
-    margin: 0 2rem 0 0;
-  }
-
-  .content-area header .wrapper {
-    /* Targeting the old header's wrapper */
-    display: flex;
-    place-items: flex-start;
-    flex-wrap: wrap;
-  }
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  min-height: 0;
+  min-width: 0;
 }
 </style>
