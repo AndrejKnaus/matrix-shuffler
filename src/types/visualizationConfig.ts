@@ -5,4 +5,7 @@ export interface VisualizationConfig {
   colorScheme: 'blues' | 'greens' | 'heatmap'
   cellShape: 'rect' | 'circle'
   showLabels: boolean
+  encoding: VisualizationEncoding
 }
+
+export type VisualizationEncoding = 'circle' | 'color' | 'circle-color' | 'color-text'

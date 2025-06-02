@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import type { VisualizationConfig } from '@/types/visualizationConfig'
+import type { VisualizationConfig, VisualizationEncoding } from '@/types/visualizationConfig'
 
 export const useVisualizationStore = defineStore('visualization', {
   state: (): { config: VisualizationConfig } => ({
@@ -10,11 +10,15 @@ export const useVisualizationStore = defineStore('visualization', {
       colorScheme: 'blues',
       cellShape: 'circle',
       showLabels: true,
+      encoding: 'color',
     },
   }),
   actions: {
     updateConfig(partialConfig: Partial<VisualizationConfig>) {
       this.config = { ...this.config, ...partialConfig }
+    },
+    setEncoding(encoding: VisualizationEncoding) {
+      this.config.encoding = encoding
     },
   },
 })
