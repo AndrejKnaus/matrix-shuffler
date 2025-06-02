@@ -1,64 +1,61 @@
-# matrix-shuffler
+# Matrix Shuffler
 
-Matrix Shuffler is a web app for matrix reordering
+A web application for matrix reordering.
 
-## Recommended IDE Setup
+## Prerequisites
 
-[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+- Node.js (version 16 or higher)
+- pnpm (if you don't have it, install it using one of these methods):
 
-## Type Support for `.vue` Imports in TS
+### Installing pnpm
 
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
+**Using npm (recommended):**
+```bash
+npm install -g pnpm
+```
 
-## Customize configuration
+**Using Homebrew (macOS):**
+```bash
+brew install pnpm
+```
 
-See [Vite Configuration Reference](https://vite.dev/config/).
+**Using Linux (using npm):**
+```bash
+npm install -g pnpm
+```
 
-## Project Setup
+## Getting Started
 
-```sh
+Clone the repository
+Install dependencies:
+```bash
 pnpm install
 ```
 
-### Compile and Hot-Reload for Development
+## Development
 
-```sh
+Start the development server:
+```bash
 pnpm dev
 ```
 
-### Type-Check, Compile and Minify for Production
+## Building for Production
 
-```sh
+Create a production build:
+```bash
 pnpm build
 ```
 
-### Run Unit Tests with [Vitest](https://vitest.dev/)
+## IDE Setup
 
-```sh
-pnpm test:unit
-```
+We recommend using [VSCode](https://code.visualstudio.com/) with the [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) extension. Make sure to disable Vetur if you have it installed.
 
-### Run End-to-End Tests with [Playwright](https://playwright.dev)
+## TypeScript Support
 
-```sh
-# Install browsers for the first run
-npx playwright install
+This project uses TypeScript with Vue. For proper type checking:
+- We use `vue-tsc` instead of `tsc` for type checking
+- The Volar extension provides TypeScript support for `.vue` files
 
-# When testing on CI, must build the project first
-pnpm build
+## Configuration
 
-# Runs the end-to-end tests
-pnpm test:e2e
-# Runs the tests only on Chromium
-pnpm test:e2e --project=chromium
-# Runs the tests of a specific file
-pnpm test:e2e tests/example.spec.ts
-# Runs the tests in debug mode
-pnpm test:e2e --debug
-```
-
-### Lint with [ESLint](https://eslint.org/)
-
-```sh
-pnpm lint
-```
+For customizing the build configuration, see the [Vite Configuration Reference](https://vite.dev/config/).
