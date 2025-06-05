@@ -4,8 +4,8 @@ import PixiVisualization from './PixiVisualization.vue'
 import { useDatasetStore, type MatrixData } from '@/stores/dataset'
 import { generateRandomMatrix } from '@/utils/utils'
 
-const DEFAULT_ROW_SIZE = 15
-const DEFAULT_COLUMN_SIZE = 50
+const DEFAULT_ROW_SIZE = 5
+const DEFAULT_COLUMN_SIZE = 7
 const DEFAULT_CELL_SIZE = 40
 const DEFAULT_PADDING = 2
 
@@ -35,11 +35,60 @@ const matrixData = computed<MatrixData | undefined>(() => {
 </script>
 
 <template>
-  <PixiVisualization
-    v-if="matrixData"
-    :cellSize="DEFAULT_CELL_SIZE"
-    :padding="DEFAULT_PADDING"
-    :matrixData="matrixData"
-  />
-  <div v-else>No data available</div>
+  <div class="pixi-matrix-outer">
+    <PixiVisualization
+      v-if="matrixData"
+      :cellSize="DEFAULT_CELL_SIZE"
+      :padding="DEFAULT_PADDING"
+      :matrixData="matrixData"
+    />
+    <div v-else class="no-data-container">
+      <svg width="64" height="64" viewBox="0 0 64 64" aria-hidden="true" class="no-data-icon">
+        <rect
+          x="8"
+          y="16"
+          width="48"
+          height="32"
+          rx="6"
+          fill="#f3f3f3"
+          stroke="#bdbdbd"
+          stroke-width="2"
+        />
+        <text
+          x="32"
+          y="38"
+          text-anchor="middle"
+          fill="#bdbdbd"
+          font-size="16"
+          font-family="Arial"
+          dy=".3em"
+        >
+          ?
+        </text>
+      </svg>
+      <div class="no-data-message">
+        <h3>No Data Available</h3>
+        <p>
+          Please import a dataset or select an example to begin visualizing your matrix.<br />
+          Use the <strong>File</strong> menu above to get started.
+        </p>
+      </div>
+    </div>
+  </div>
 </template>
+
+<style scoped>
+.pixi-matrix-outer {
+  padding: 16px;
+  margin: 0 auto;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+</style>
