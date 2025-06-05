@@ -4,6 +4,7 @@ import Introduction from './components/Introduction.vue'
 import PixiVisualizationWrapper from './components/PixiVisualizationWrapper.vue'
 import { useVisualizationStore } from './stores/visualization'
 import type { VisualizationEncoding } from './types/visualizationConfig'
+import { useFileUpload } from '@/utils/utils'
 
 const showImportModal = ref(false) // New ref for modal visibility
 
@@ -13,13 +14,15 @@ const setEncoding = (encoding: VisualizationEncoding) => {
   visualizationStore.setEncoding(encoding)
 }
 
-function handleImportData() {
+const handleImportData = () => {
   showImportModal.value = true
 }
 
-function closeImportModal() {
+const closeImportModal = () => {
   showImportModal.value = false
 }
+
+const { fileData, fileError, showFileData, handleFileUpload } = useFileUpload()
 </script>
 
 <template>
@@ -69,7 +72,7 @@ function closeImportModal() {
       <!--<img alt="Vue logo" class="logo" src="@/assets/logo.svg" width="125" height="125" />-->
 
       <div class="wrapper">
-        <Introduction msg="Welcome to Matrix Shuffler!" />
+        <!--<Introduction msg="Welcome to Matrix Shuffler!" />-->
 
         <!--
         <nav>
@@ -79,7 +82,7 @@ function closeImportModal() {
         -->
         <!-- PixiJS Visualization View -->
         <div class="visualization-view">
-          <PixiVisualizationWrapper :useRandomData="true" :matrixSize="10" />
+          <PixiVisualizationWrapper :useRandomData="false" :matrixSize="10" />
         </div>
       </div>
     </main>
@@ -90,7 +93,29 @@ function closeImportModal() {
         <h3>Import Data</h3>
         <p>Select the dataset</p>
         <!-- Example: File input for import -->
-        <input type="file" @change="() => console.log('File selected for import')" />
+        <input
+          type="file"
+          accept=".csv,.tsv"
+          @change="
+            (event) => {
+              handleFileUpload(event)
+              closeImportModal()
+            }
+          "
+        />
+        <div v-if="fileError" class="file-error">
+          <p>Error: {{ fileError }}</p>
+        </div>
+        <!--
+        <div
+          v-if="fileData && showFileData"
+          class="file-output"
+          style="max-height: 300px; overflow-y: auto"
+        >
+          <h4>File Content Summary:</h4>
+          <pre>{{ fileData }}</pre>
+        </div>
+        -->
         <div class="modal-actions">
           <button @click="closeImportModal">Cancel</button>
           <button
@@ -103,6 +128,11 @@ function closeImportModal() {
           >
             Import
           </button>
+          <!--
+          <button v-if="fileData" @click="showFileData = !showFileData" style="margin-left: 10px">
+            {{ showFileData ? 'Hide' : 'Show' }} File Summary
+          </button>
+          -->
         </div>
       </div>
     </div>
@@ -192,7 +222,7 @@ function closeImportModal() {
   flex: 1 1 0;
   width: 100%;
   height: calc(100vh - 60px); /* header height */
-  margin-top: 60px; /* header height */
+  margin-top: 52px; /* header height */
   padding: 0;
   overflow: hidden;
   box-sizing: border-box;
