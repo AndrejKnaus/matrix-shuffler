@@ -446,7 +446,7 @@ const createCell = (
 
   const rect = new Graphics()
   const normalizedValue = value.normalizedValue ?? value.initialValue
-  const alpha = 0.2 + normalizedValue * 0.8
+  const alpha = normalizedValue
 
   const encoding: 'circle' | 'color' | 'circle-color' | 'color-text' =
     visualizationStore.config.encoding
