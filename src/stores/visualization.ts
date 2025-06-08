@@ -1,8 +1,19 @@
-import { defineStore } from 'pinia'
 import type { VisualizationConfig, VisualizationEncoding } from '@/types/visualizationConfig'
 
+import { defineStore } from 'pinia'
+
+export interface VisualizationSettings {
+  colorScheme: string
+  minColor: string
+  maxColor: string
+  normalization: 'none' | 'row' | 'column' | 'global'
+}
+
 export const useVisualizationStore = defineStore('visualization', {
-  state: (): { config: VisualizationConfig } => ({
+  state: (): {
+    config: VisualizationConfig
+    settings: VisualizationSettings
+  } => ({
     config: {
       width: 600,
       height: 600,
@@ -12,6 +23,12 @@ export const useVisualizationStore = defineStore('visualization', {
       showLabels: true,
       encoding: 'color',
     },
+    settings: {
+      colorScheme: 'blues',
+      minColor: '#f0f8ff',
+      maxColor: '#1e40af',
+      normalization: 'none'
+    }
   }),
   actions: {
     updateConfig(partialConfig: Partial<VisualizationConfig>) {
@@ -20,5 +37,11 @@ export const useVisualizationStore = defineStore('visualization', {
     setEncoding(encoding: VisualizationEncoding) {
       this.config.encoding = encoding
     },
+    updateSettings(partialSettings: Partial<VisualizationSettings>) {
+      this.settings = { ...this.settings, ...partialSettings }
+    },
+    setNormalization(normalization: 'none' | 'row' | 'column' | 'global') {
+      this.settings.normalization = normalization
+    }
   },
 })

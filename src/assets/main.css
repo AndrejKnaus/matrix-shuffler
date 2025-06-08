@@ -1,17 +1,17 @@
 @import './base.css';
 
 :root {
-  --color-primary: hsla(160, 60%, 32%, 1); /* softer, less saturated teal */
-  --color-primary-light: hsla(160, 60%, 42%, 1); /* lighter variant */
-  --color-primary-dark: hsla(160, 60%, 22%, 1); /* darker variant */
+  --color-primary: hsla(217, 70%, 45%, 1); /* professional blue */
+  --color-primary-light: hsla(217, 70%, 55%, 1); /* lighter blue variant */
+  --color-primary-dark: hsla(217, 70%, 35%, 1); /* darker blue variant */
 
-  --color-background: #f6faf8; /* very light greenish background */
-  --color-background-soft: #e9f3ef; /* soft, muted background */
+  --color-background: #f8fafc; /* very light blue-tinted background */
+  --color-background-soft: #e2e8f0; /* soft, muted blue background */
 
-  --color-on-hover: #fafafa; /* dark blue-grey for hover */
-  --color-accent: #b2dfdb; /* accent: soft teal */
-  --color-border: #cfd8dc; /* light border */
-  --color-text: #263238; /* dark blue-grey for text */
+  --color-on-hover: #fafafa; /* light grey for hover */
+  --color-accent: #cbd5e1; /* accent: soft blue-grey */
+  --color-border: #cbd5e1; /* light border */
+  --color-text: #1e293b; /* dark slate for text */
   --color-text-light: #fff;
 }
 

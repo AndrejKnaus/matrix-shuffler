@@ -1,18 +1,22 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import Introduction from './components/Introduction.vue'
+// import Introduction from './components/Introduction.vue'
 import PixiVisualizationWrapper from './components/PixiVisualizationWrapper.vue'
+import DataTable from './components/DataTable.vue'
+import SettingsPanel from './components/SettingsPanel.vue'
 import { useVisualizationStore } from './stores/visualization'
-import type { VisualizationEncoding } from './types/visualizationConfig'
+
 import { useFileUpload } from '@/utils/utils'
 
 const showImportModal = ref(false) // New ref for modal visibility
 
 const visualizationStore = useVisualizationStore()
 
-const setEncoding = (encoding: VisualizationEncoding) => {
-  visualizationStore.setEncoding(encoding)
+const changeEncoding = (encoding: string) => {
+  visualizationStore.setEncoding(encoding as 'circle' | 'color' | 'circle-color' | 'color-text')
 }
+
+
 
 const handleImportData = () => {
   showImportModal.value = true
@@ -22,7 +26,44 @@ const closeImportModal = () => {
   showImportModal.value = false
 }
 
-const { fileData, fileError, showFileData, handleFileUpload } = useFileUpload()
+const { fileError } = useFileUpload()
+const dataTableRef = ref()
+
+const handleDataChange = () => {
+  // Data updated in visualization
+}
+
+const handleCSVImport = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+
+  if (file) {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const csv = e.target?.result as string
+      if (csv) {
+        // Parse CSV data
+        const lines = csv.split('\n').filter(line => line.trim())
+        const data = lines.map(line => {
+          const values = line.split(',').map(val => val.trim())
+          return values.map((val, index) => {
+            // First column is usually text (item names), others are numbers
+            if (index === 0) return val
+            const num = parseFloat(val)
+            return isNaN(num) ? val : num
+          })
+        })
+
+        // Load data into the table
+        if (dataTableRef.value && data.length > 0) {
+          dataTableRef.value.loadFromCSV(data)
+        }
+      }
+    }
+    reader.readAsText(file)
+  }
+  closeImportModal()
+}
 </script>
 
 <template>
@@ -43,10 +84,10 @@ const { fileData, fileError, showFileData, handleFileUpload } = useFileUpload()
           <li class="dropdown">
             <a href="#" class="dropbtn">View</a>
             <div class="dropdown-content">
-              <a href="#" @click.prevent="setEncoding('circle')">Display as Circles</a>
-              <a href="#" @click.prevent="setEncoding('color')">Display as Colors</a>
-              <a href="#" @click.prevent="setEncoding('circle-color')">Display as Circle+Color</a>
-              <a href="#" @click.prevent="setEncoding('color-text')">Display as Color+Text</a>
+              <a href="#" @click.prevent="changeEncoding('circle')">Display as Circles</a>
+              <a href="#" @click.prevent="changeEncoding('color')">Display as Colors</a>
+              <a href="#" @click.prevent="changeEncoding('circle-color')">Display as Circle+Color</a>
+              <a href="#" @click.prevent="changeEncoding('color-text')">Display as Color+Text</a>
             </div>
           </li>
           <li class="dropdown">
@@ -80,12 +121,23 @@ const { fileData, fileError, showFileData, handleFileUpload } = useFileUpload()
           <RouterLink to="/about">About</RouterLink>
         </nav>
         -->
-        <!-- PixiJS Visualization View -->
-        <div class="visualization-view">
-          <PixiVisualizationWrapper :useRandomData="false" :matrixSize="10" />
+        <!-- Main Content Area -->
+        <div class="main-content">
+          <!-- Data Table Panel -->
+          <div class="data-panel">
+            <DataTable ref="dataTableRef" @dataChanged="handleDataChange" />
+          </div>
+
+          <!-- PixiJS Visualization View -->
+          <div class="visualization-view">
+            <PixiVisualizationWrapper :useRandomData="false" />
+          </div>
         </div>
       </div>
     </main>
+
+    <!-- Settings Panel -->
+    <SettingsPanel />
 
     <div v-if="showImportModal" class="modal-overlay" @click.self="closeImportModal">
       <div class="modal-content">
@@ -96,12 +148,7 @@ const { fileData, fileError, showFileData, handleFileUpload } = useFileUpload()
         <input
           type="file"
           accept=".csv,.tsv"
-          @change="
-            (event) => {
-              handleFileUpload(event)
-              closeImportModal()
-            }
-          "
+          @change="handleCSVImport"
         />
         <div v-if="fileError" class="file-error">
           <p>Error: {{ fileError }}</p>
@@ -119,12 +166,7 @@ const { fileData, fileError, showFileData, handleFileUpload } = useFileUpload()
         <div class="modal-actions">
           <button @click="closeImportModal">Cancel</button>
           <button
-            @click="
-              () => {
-                console.log('Perform import')
-                closeImportModal()
-              }
-            "
+            @click="closeImportModal"
           >
             Import
           </button>
@@ -292,16 +334,7 @@ const { fileData, fileError, showFileData, handleFileUpload } = useFileUpload()
   border: 1px solid #4caf50;
 }
 
-.visualization-view {
-  flex: 1 1 0;
-  min-height: 0;
-  min-width: 0;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  box-sizing: border-box;
-}
+/* Removed - now defined below in main-content section */
 
 .wrapper {
   display: flex;
@@ -310,5 +343,64 @@ const { fileData, fileError, showFileData, handleFileUpload } = useFileUpload()
   width: 100%;
   min-height: 0;
   min-width: 0;
+}
+
+.main-content {
+  display: flex;
+  height: 100%;
+  gap: 8px;
+  padding: 8px;
+  min-height: 0;
+  overflow: hidden;
+  flex-direction: column;
+}
+
+.data-panel {
+  flex: 0 0 auto;
+  min-height: 250px;
+  max-height: 400px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Responsive layout for wider screens */
+@media (min-width: 768px) {
+  .main-content {
+    flex-direction: row;
+    gap: 16px;
+    padding: 16px;
+  }
+
+  .data-panel {
+    flex: 0 0 350px;
+    min-height: 0;
+    max-height: none;
+    max-width: 350px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .data-panel {
+    flex: 0 0 400px;
+    max-width: 400px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .data-panel {
+    flex: 0 0 420px;
+    max-width: 420px;
+  }
+}
+
+.visualization-view {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 </style>

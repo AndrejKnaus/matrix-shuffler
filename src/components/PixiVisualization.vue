@@ -102,6 +102,11 @@ const clearStage = () => {
     app.value.stage.removeChild(child)
     child.destroy()
   }
+
+  // Reset container arrays to prevent stale references
+  cellContainers.value = []
+  rowContainers.value = []
+  columnLabelObjects.value = []
 }
 
 const setupDragHandling = (cellSize: number, padding: number) => {
@@ -276,7 +281,9 @@ const handleRowDrag = (dy: number, cellSize: number, padding: number) => {
     const removedCells = cellContainers.value.splice(dragState.value.originalRowIndex, 1)[0]
     cellContainers.value.splice(currentRowIndex, 0, removedCells)
 
+    // eslint-disable-next-line vue/no-mutating-props
     const removedData = props.matrixData.values.splice(dragState.value.originalRowIndex, 1)[0]
+    // eslint-disable-next-line vue/no-mutating-props
     props.matrixData.values.splice(currentRowIndex, 0, removedData)
 
     updateCellIndices()
@@ -357,6 +364,30 @@ const updateCellIndices = () => {
 }
 
 const renderMatrix = (cellSize: number, padding: number, container: Container) => {
+  // Pre-calculate min/max for auto-normalization if needed
+  const allValues = props.matrixData.values.flat().map(cell => cell.initialValue).filter(v => !isNaN(v))
+  const needsAutoNormalization = props.matrixData.values.some(row =>
+    row.some(cell => cell.normalizedValue === undefined)
+  )
+
+  let globalMin = Math.min(...allValues)
+  let globalMax = Math.max(...allValues)
+
+  if (needsAutoNormalization) {
+    // Check for extreme outliers - if the range is too wide, use percentile-based normalization
+    const range = globalMax - globalMin
+    const sortedValues = [...allValues].sort((a, b) => a - b)
+    const p5 = sortedValues[Math.floor(sortedValues.length * 0.05)] // 5th percentile
+    const p95 = sortedValues[Math.floor(sortedValues.length * 0.95)] // 95th percentile
+    const percentileRange = p95 - p5
+
+    // If the full range is more than 10x the percentile range, use percentile-based normalization
+    if (range > percentileRange * 10) {
+      globalMin = p5
+      globalMax = p95
+    }
+  }
+
   let maxLabelWidth = 0
   const tempLabels: BitmapText[] = []
   for (let row = 0; row < props.matrixData.rowNames.length; row++) {
@@ -423,7 +454,7 @@ const renderMatrix = (cellSize: number, padding: number, container: Container) =
 
     for (let col = 0; col < props.matrixData.columnNames.length; col++) {
       const value = props.matrixData.values[row][col]
-      const cell = createCell(row, col, value, cellSize, padding)
+      const cell = createCell(row, col, value, cellSize, padding, needsAutoNormalization, globalMin, globalMax)
       rowContainer.addChild(cell)
       cellContainers.value[row][col] = cell
     }
@@ -433,44 +464,109 @@ const renderMatrix = (cellSize: number, padding: number, container: Container) =
   }
 }
 
+// Helper function to convert CSS hex color to PIXI color
+const hexToPixiColor = (hex: string): number => {
+  return parseInt(hex.replace('#', ''), 16)
+}
+
+// Helper function to interpolate between min and max colors based on value
+const getInterpolatedColor = (value: number): number => {
+  try {
+    // Clamp value between 0 and 1
+    const clampedValue = Math.max(0, Math.min(1, isNaN(value) ? 0 : value))
+
+    const minColor = hexToPixiColor(visualizationStore.settings.minColor)
+    const maxColor = hexToPixiColor(visualizationStore.settings.maxColor)
+
+    // Simple linear interpolation - for more complex color spaces, could use a library
+    const r1 = (minColor >> 16) & 255
+    const g1 = (minColor >> 8) & 255
+    const b1 = minColor & 255
+
+    const r2 = (maxColor >> 16) & 255
+    const g2 = (maxColor >> 8) & 255
+    const b2 = maxColor & 255
+
+    const r = Math.round(r1 + (r2 - r1) * clampedValue)
+    const g = Math.round(g1 + (g2 - g1) * clampedValue)
+    const b = Math.round(b1 + (b2 - b1) * clampedValue)
+
+    return (r << 16) | (g << 8) | b
+  } catch (error) {
+    return 0x1e40af // Default blue color
+  }
+}
+
 const createCell = (
   row: number,
   col: number,
   value: MatrixCell,
   cellSize: number,
   padding: number,
+  needsAutoNormalization: boolean = false,
+  globalMin: number = 0,
+  globalMax: number = 1,
 ) => {
-  const cell = new Container()
-  cell.rowIndex = row
-  cell.colIndex = col
+  try {
+    const cell = new Container()
+    cell.rowIndex = row
+    cell.colIndex = col
 
-  const rect = new Graphics()
-  const normalizedValue = value.normalizedValue ?? value.initialValue
-  const alpha = normalizedValue
+    const rect = new Graphics()
 
-  const encoding: 'circle' | 'color' | 'circle-color' | 'color-text' =
-    visualizationStore.config.encoding
+    const initialValue = isNaN(value.initialValue) ? 0 : value.initialValue
+    let normalizedValue = value.normalizedValue !== undefined && !isNaN(value.normalizedValue)
+      ? value.normalizedValue
+      : initialValue
 
-  switch (encoding) {
-    case 'circle':
-      createCircleCell(cell, rect, value.initialValue, cellSize, normalizedValue)
-      break
-    case 'color':
-      createColorCell(cell, rect, alpha, cellSize)
-      break
-    case 'color-text':
-      createColorTextCell(cell, rect, value.initialValue, alpha, cellSize)
-      break
-    case 'circle-color':
-      createCircleColor(cell, rect, value.initialValue, alpha, cellSize, normalizedValue)
-      break
+    // If no normalization was applied (normalizedValue equals initialValue),
+    // we need to normalize for display purposes using pre-calculated global min/max
+    if (value.normalizedValue === undefined && needsAutoNormalization) {
+      if (globalMax !== globalMin) {
+        // Clamp values to the normalization range to handle outliers
+        const clampedValue = Math.max(globalMin, Math.min(globalMax, initialValue))
+        normalizedValue = (clampedValue - globalMin) / (globalMax - globalMin)
+      } else {
+        normalizedValue = 0.5
+      }
+    }
+
+    const alpha = Math.max(0, Math.min(1, normalizedValue)) // Clamp alpha between 0 and 1
+
+    const encoding: 'circle' | 'color' | 'circle-color' | 'color-text' =
+      visualizationStore.config.encoding
+
+    switch (encoding) {
+      case 'circle':
+        createCircleCell(cell, rect, initialValue, cellSize, normalizedValue)
+        break
+      case 'color':
+        createColorCell(cell, rect, alpha, cellSize)
+        break
+      case 'color-text':
+        createColorTextCell(cell, rect, initialValue, alpha, cellSize)
+        break
+      case 'circle-color':
+        createCircleColor(cell, rect, initialValue, alpha, cellSize, normalizedValue)
+        break
+    }
+
+    cell.x = col * (cellSize + padding) + rowLabelPadding.value
+    cell.eventMode = 'dynamic'
+    cell.cursor = 'pointer'
+
+    return cell
+  } catch (error) {
+    console.error('Error creating cell at', row, col, ':', error)
+    // Return a simple fallback cell
+    const fallbackCell = new Container()
+    const rect = new Graphics()
+    rect.fill({ color: 0xcccccc, alpha: 0.5 })
+    rect.rect(0, 0, cellSize, cellSize)
+    fallbackCell.addChild(rect)
+    fallbackCell.x = col * (cellSize + padding) + rowLabelPadding.value
+    return fallbackCell
   }
-
-  cell.x = col * (cellSize + padding) + rowLabelPadding.value
-  cell.eventMode = 'dynamic'
-  cell.cursor = 'pointer'
-
-  return cell
 }
 
 const createCircleCell = (
@@ -480,13 +576,15 @@ const createCircleCell = (
   cellSize: number,
   normalizedValue: number,
 ) => {
-  rect.setStrokeStyle({ width: 1, color: 0x218362 })
+  const borderColor = getInterpolatedColor(normalizedValue)
+  rect.setStrokeStyle({ width: 1, color: borderColor })
   rect.fill({ color: 0xfff, alpha: 0 })
   rect.rect(0, 0, cellSize, cellSize)
   rect.endFill()
 
   const valueIndicator = new Graphics()
-  valueIndicator.fill({ color: 0x218362, alpha: 0.9 })
+  const fillColor = getInterpolatedColor(normalizedValue)
+  valueIndicator.fill({ color: fillColor, alpha: 0.9 })
   valueIndicator.circle(cellSize / 2, cellSize / 2, normalizedValue * (cellSize / 3))
   valueIndicator.endFill()
 
@@ -495,8 +593,10 @@ const createCircleCell = (
 }
 
 const createColorCell = (cell: Container, rect: Graphics, alpha: number, cellSize: number) => {
-  rect.setStrokeStyle({ width: 1, color: 0x218362 })
-  rect.fill({ color: 0x218362, alpha: alpha })
+  const borderColor = getInterpolatedColor(alpha)
+  const fillColor = getInterpolatedColor(alpha)
+  rect.setStrokeStyle({ width: 1, color: borderColor })
+  rect.fill({ color: fillColor, alpha: alpha })
   rect.rect(0, 0, cellSize, cellSize)
   rect.endFill()
   cell.addChild(rect)
@@ -509,8 +609,10 @@ const createColorTextCell = (
   alpha: number,
   cellSize: number,
 ) => {
-  rect.setStrokeStyle({ width: 1, color: 0x218362 })
-  rect.fill({ color: 0x218362, alpha: alpha })
+  const borderColor = getInterpolatedColor(alpha)
+  const fillColor = getInterpolatedColor(alpha)
+  rect.setStrokeStyle({ width: 1, color: borderColor })
+  rect.fill({ color: fillColor, alpha: alpha })
   rect.rect(0, 0, cellSize, cellSize)
   rect.endFill()
 
@@ -539,13 +641,16 @@ const createCircleColor = (
   cellSize: number,
   normalizedValue: number,
 ) => {
-  rect.setStrokeStyle({ width: 1, color: 0x218362 })
-  rect.fill({ color: 0x218362, alpha: alpha })
+  const borderColor = getInterpolatedColor(alpha)
+  const fillColor = getInterpolatedColor(alpha)
+  rect.setStrokeStyle({ width: 1, color: borderColor })
+  rect.fill({ color: fillColor, alpha: alpha })
   rect.rect(0, 0, cellSize, cellSize)
   rect.endFill()
 
   const valueIndicator = new Graphics()
-  valueIndicator.fill({ color: 0x218362, alpha: 0.9 })
+  const circleColor = getInterpolatedColor(normalizedValue)
+  valueIndicator.fill({ color: circleColor, alpha: 0.9 })
   valueIndicator.circle(cellSize / 2, cellSize / 2, normalizedValue * (cellSize / 3))
   valueIndicator.endFill()
 
@@ -555,36 +660,77 @@ const createCircleColor = (
 
 const centerContainer = (container: Container) => {
   if (!app.value) {
-    console.error('App is null in centerContainer')
     return
   }
-  const fitsHorizontally = container.width <= app.value.screen.width
-  const fitsVertically = container.height <= app.value.screen.height
 
-  container.x = fitsHorizontally ? (app.value.screen.width - container.width) / 2 : 0
-  container.y = fitsVertically ? (app.value.screen.height - container.height) / 2 : 0
+  // Calculate scale to fit the content within the viewport
+  const availableWidth = app.value.screen.width * 0.9 // Leave 10% margin
+  const availableHeight = app.value.screen.height * 0.9 // Leave 10% margin
+
+  const scaleX = container.width > 0 ? availableWidth / container.width : 1
+  const scaleY = container.height > 0 ? availableHeight / container.height : 1
+
+  // For large datasets, use a minimum scale to ensure visibility
+  const minScale = 0.1 // Don't scale smaller than 10%
+  const scale = Math.max(minScale, Math.min(scaleX, scaleY, 1)) // Don't scale up, only down
+
+  container.scale.set(scale)
+
+  // Center after scaling
+  const scaledWidth = container.width * scale
+  const scaledHeight = container.height * scale
+
+  container.x = (app.value.screen.width - scaledWidth) / 2
+  container.y = (app.value.screen.height - scaledHeight) / 2
 }
 
 // Matrix visualization creation
 const createMatrixVisualization = () => {
   if (!app.value) {
-    console.error('App is null in createMatrixVisualization')
     return
   }
-  clearStage()
 
-  const container = new Container()
-  app.value.stage.addChild(container)
+  if (!props.matrixData || !props.matrixData.rowNames || !props.matrixData.columnNames) {
+    return
+  }
 
-  const cellSize = visualizationStore.config.cellSize || props.cellSize
+  const rows = props.matrixData.rowNames.length
+  const cols = props.matrixData.columnNames.length
+
+  // Use configured cell size, fallback to automatic calculation
+  let cellSize = visualizationStore.config.cellSize || props.cellSize
   const padding = visualizationStore.config.padding || props.padding
+
+  if (!cellSize) {
+    const viewportWidth = app.value.screen.width
+    const viewportHeight = app.value.screen.height
+    const availableWidth = viewportWidth * 0.8
+    const availableHeight = viewportHeight * 0.8
+
+    const maxCellSizeByWidth = Math.floor(availableWidth / cols)
+    const maxCellSizeByHeight = Math.floor(availableHeight / rows)
+    cellSize = Math.min(maxCellSizeByWidth, maxCellSizeByHeight)
+
+    // Minimum cell size for large datasets
+    const minCellSize = rows > 20 || cols > 20 ? 6 : 10
+    cellSize = Math.max(cellSize, minCellSize)
+  }
 
   rowSize.value = props.matrixData.rowNames.length
   columnSize.value = props.matrixData.columnNames.length
 
-  renderMatrix(cellSize, padding, container)
-  centerContainer(container)
-  setupDragHandling(cellSize, padding)
+  try {
+    clearStage()
+
+    const container = new Container()
+    app.value.stage.addChild(container)
+
+    renderMatrix(cellSize, padding, container)
+    centerContainer(container)
+    setupDragHandling(cellSize, padding)
+  } catch (error) {
+    console.error('Error creating matrix visualization:', error)
+  }
 }
 
 const determineDragDirection = (dx: number, dy: number): 'row' | 'column' => {
@@ -629,7 +775,6 @@ const handleKeyUp = (e: KeyboardEvent) => {
 const resizePixi = () => {
   if (!app.value || !containerRef.value) return
 
-  // Set new width and height based on the container or window size
   const width = containerRef.value.clientWidth || window.innerWidth
   const height = containerRef.value.clientHeight || window.innerHeight
 
@@ -637,7 +782,6 @@ const resizePixi = () => {
   app.value.screen.width = width
   app.value.screen.height = height
 
-  // Re-center the matrix visualization
   if (app.value.stage.children.length > 0) {
     centerContainer(app.value.stage.children[0] as Container)
   }
@@ -655,7 +799,6 @@ onMounted(async () => {
   window.addEventListener('keydown', (e) => {
     if (e.code === 'Space') isPanning.value = true
     if (e.code === 'KeyR') {
-      // Reset the view
       if (app.value && app.value.stage.children.length > 0) {
         centerContainer(app.value.stage.children[0] as Container)
       }
@@ -668,7 +811,7 @@ onMounted(async () => {
 
 watch(
   () => props.matrixData,
-  (newVal, _oldVal) => {
+  (newVal) => {
     if (newVal && app.value) {
       createMatrixVisualization()
     }
@@ -678,7 +821,27 @@ watch(
 
 watch(
   () => visualizationStore.config.encoding,
-  (newVal, _oldVal) => {
+  (newVal) => {
+    if (newVal && app.value) {
+      createMatrixVisualization()
+    }
+  },
+  { deep: true },
+)
+
+watch(
+  () => visualizationStore.settings,
+  (newVal) => {
+    if (newVal && app.value) {
+      createMatrixVisualization()
+    }
+  },
+  { deep: true },
+)
+
+watch(
+  () => props.matrixData.values,
+  (newVal) => {
     if (newVal && app.value) {
       createMatrixVisualization()
     }
@@ -752,7 +915,6 @@ onUnmounted(() => {
 <style scoped>
 .pixi-matrix-container,
 .canvas-container {
-  padding: 0 20px;
   flex: 1 1 0;
   width: 100%;
   height: 100%;

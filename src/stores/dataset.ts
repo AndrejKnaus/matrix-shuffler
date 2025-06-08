@@ -24,7 +24,7 @@ export const useDatasetStore = defineStore('dataset', {
     rowNames: [] as string[],
     columnNames: [] as string[],
     initialData: [] as number[][], // Raw parsed data
-    normalizationType: 'none' as 'none' | 'row' | 'column', // Normalization type
+    normalizationType: 'none' as 'none' | 'row' | 'column' | 'global', // Normalization type
     normalizationRanges: {} as Record<string, 'zero-max' | 'min-max'>, // key: row/col name
     normalizedData: [] as number[][], // Normalized data
     rowOrder: [] as number[], // Current row order (saved as index of rowNames)
@@ -42,9 +42,8 @@ export const useDatasetStore = defineStore('dataset', {
       this.rowOrder = rowNames.map((name) => rowNames.indexOf(name))
       this.columnOrder = columnNames.map((name) => columnNames.indexOf(name))
       this.hasData = true
-      console.log(`Data set with ${rowNames.length} rows and ${columnNames.length} columns.`)
     },
-    setNormalizationType(type: 'none' | 'row' | 'column') {
+    setNormalizationType(type: 'none' | 'row' | 'column' | 'global') {
       this.normalizationType = type
       this.normalizationRanges = {} // Reset ranges when changing type
     },
@@ -68,12 +67,14 @@ export const useDatasetStore = defineStore('dataset', {
           const rangeType = this.normalizationRanges[this.rowNames[i]] || 'min-max'
           const min = Math.min(...row)
           const max = Math.max(...row)
-          console.log(
-            `Normalizing row ${this.rowNames[i]}: min=${min}, max=${max}, rangeType=${rangeType}`,
-          )
           normalized[i] = row.map((val) => {
             if (rangeType === 'min-max') {
-              return max !== min ? (val - min) / (max - min) : 0
+              if (max !== min) {
+                return (val - min) / (max - min)
+              } else {
+                // When all values are identical, set them to 0.5 (middle value) instead of 0
+                return 0.5
+              }
             } else {
               return max !== 0 ? val / max : 0
             }
@@ -85,20 +86,36 @@ export const useDatasetStore = defineStore('dataset', {
           const rangeType = this.normalizationRanges[this.columnNames[j]] || 'min-max'
           const min = Math.min(...col)
           const max = Math.max(...col)
-          console.log(
-            `Normalizing column ${this.columnNames[j]}: min=${min}, max=${max}, rangeType=${rangeType}`,
-          )
           for (let i = 0; i < numRows; i++) {
             if (!normalized[i]) normalized[i] = []
             if (rangeType === 'min-max') {
-              normalized[i][j] = max !== min ? (data[i][j] - min) / (max - min) : 0
+              if (max !== min) {
+                normalized[i][j] = (data[i][j] - min) / (max - min)
+              } else {
+                // When all values are identical, set them to 0.5 (middle value) instead of 0
+                normalized[i][j] = 0.5
+              }
             } else {
               normalized[i][j] = max !== 0 ? data[i][j] / max : 0
             }
           }
         }
+      } else if (this.normalizationType === 'global') {
+        // Global normalization - find min/max across entire dataset
+        const allValues = data.flat()
+        const globalMin = Math.min(...allValues)
+        const globalMax = Math.max(...allValues)
+
+        for (let i = 0; i < numRows; i++) {
+          normalized[i] = data[i].map((val) => {
+            if (globalMax !== globalMin) {
+              return (val - globalMin) / (globalMax - globalMin)
+            } else {
+              return 0.5
+            }
+          })
+        }
       }
-      console.log('Normalization complete:', normalized)
       this.normalizedData = normalized
     },
     setRowOrder(order: number[]) {
