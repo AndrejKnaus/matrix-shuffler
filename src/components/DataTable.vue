@@ -45,7 +45,6 @@ import { useVisualizationStore } from '@/stores/visualization'
 type CellValue = string | number | null
 type TableData = CellValue[][]
 
-// Initialize with empty data structure that Handsontable can handle
 const tableData = ref<TableData>([
   ['', '', '', '', ''],
   ['', '', '', '', ''],
@@ -64,7 +63,7 @@ const emit = defineEmits<{
 
 const datasetStore = useDatasetStore()
 
-// Convert reactive data to plain arrays for Handsontable
+// convert reactive data to plain arrays for Handsontable
 const plainTableData = computed(() => {
   return JSON.parse(JSON.stringify(tableData.value))
 })
@@ -80,12 +79,11 @@ const getDataStatus = computed(() => {
     return 'No data loaded'
   }
 
-  const rows = tableData.value.length
-  const cols = tableData.value[0]?.length || 0
+  const rows = Math.max(0, tableData.value.length - 1) // subtract header row
+  const cols = Math.max(0, (tableData.value[0]?.length || 0) - 1) // subtract label column
   return `${rows} rows × ${cols} columns`
 })
 
-// Update dataset store from table data
 const updateDatasetStore = (data: TableData, preserveNormalization: boolean = false) => {
   if (data.length === 0 || !hasRealData.value) {
     datasetStore.reset()
@@ -96,14 +94,12 @@ const updateDatasetStore = (data: TableData, preserveNormalization: boolean = fa
   const columnNames: string[] = []
   const numericData: number[][] = []
 
-  // Get column names from first row
   const headerRow = data[0]
   for (let i = 1; i < headerRow.length; i++) {
     const colName = headerRow[i]?.toString() || `Col ${i}`
     columnNames.push(colName)
   }
 
-  // Process data rows
   for (let rowIdx = 1; rowIdx < data.length; rowIdx++) {
     const row = data[rowIdx]
     if (!row || row.length === 0) continue
@@ -141,7 +137,6 @@ const updateDatasetStore = (data: TableData, preserveNormalization: boolean = fa
 }
 
 const loadSampleData = () => {
-  // Sample matrix data
   tableData.value = [
     ['Items', 'Metric A', 'Metric B', 'Metric C', 'Metric D'],
     ['Item A', 0.8, 0.3, 0.6, 0.9],

@@ -6,6 +6,7 @@ import DataTable from './components/DataTable.vue'
 import SettingsPanel from './components/SettingsPanel.vue'
 import { useVisualizationStore } from './stores/visualization'
 
+
 import { useFileUpload } from '@/utils/utils'
 
 const showImportModal = ref(false) // New ref for modal visibility
@@ -15,8 +16,6 @@ const visualizationStore = useVisualizationStore()
 const changeEncoding = (encoding: string) => {
   visualizationStore.setEncoding(encoding as 'circle' | 'color' | 'circle-color' | 'color-text')
 }
-
-
 
 const handleImportData = () => {
   showImportModal.value = true
@@ -97,6 +96,7 @@ const handleCSVImport = (event: Event) => {
               <a href="#">Apply Reordering Algorithm</a>
             </div>
           </li>
+
           <li class="dropdown">
             <a href="#" class="dropbtn">Help</a>
             <div class="dropdown-content">
@@ -128,15 +128,15 @@ const handleCSVImport = (event: Event) => {
             <DataTable ref="dataTableRef" @dataChanged="handleDataChange" />
           </div>
 
-          <!-- PixiJS Visualization View -->
-          <div class="visualization-view">
+        <!-- PixiJS Visualization View -->
+        <div class="visualization-view">
             <PixiVisualizationWrapper :useRandomData="false" />
           </div>
         </div>
       </div>
+
     </main>
 
-    <!-- Settings Panel -->
     <SettingsPanel />
 
     <div v-if="showImportModal" class="modal-overlay" @click.self="closeImportModal">

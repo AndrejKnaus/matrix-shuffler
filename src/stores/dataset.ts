@@ -19,6 +19,9 @@ export interface NormalizationState {
   max: number
 }
 
+export type SortDirection = 'asc' | 'desc'
+export type SortMethod = 'sum' | 'mean' | 'median' | 'max' | 'min' | 'variance' | 'alphabetical'
+
 export const useDatasetStore = defineStore('dataset', {
   state: () => ({
     rowNames: [] as string[],
@@ -134,6 +137,300 @@ export const useDatasetStore = defineStore('dataset', {
     resetOrder() {
       this.rowOrder = this.rowNames.map((name) => this.rowNames.indexOf(name))
       this.columnOrder = this.columnNames.map((name) => this.columnNames.indexOf(name))
+    },
+
+    // 2D Sorting Algorithms
+
+    // Helper function to calculate statistic for a row or column
+    calculateStatistic(values: number[], method: SortMethod): number {
+      if (method === 'alphabetical') return 0 // Not applicable for numeric calculation
+
+      const validValues = values.filter(v => !isNaN(v) && isFinite(v))
+      if (validValues.length === 0) return 0
+
+      switch (method) {
+        case 'sum':
+          return validValues.reduce((a, b) => a + b, 0)
+        case 'mean':
+          return validValues.reduce((a, b) => a + b, 0) / validValues.length
+        case 'median':
+          const sorted = [...validValues].sort((a, b) => a - b)
+          const mid = Math.floor(sorted.length / 2)
+          return sorted.length % 2 === 0
+            ? (sorted[mid - 1] + sorted[mid]) / 2
+            : sorted[mid]
+        case 'max':
+          return Math.max(...validValues)
+        case 'min':
+          return Math.min(...validValues)
+        case 'variance':
+          const mean = validValues.reduce((a, b) => a + b, 0) / validValues.length
+          return validValues.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / validValues.length
+        default:
+          return 0
+      }
+    },
+
+    // Sort rows by specified method and direction
+    sortRows(method: SortMethod, direction: SortDirection = 'desc') {
+      if (!this.hasData || this.initialData.length === 0) return
+
+      const data = this.normalizedData.length > 0 ? this.normalizedData : this.initialData
+
+      if (method === 'alphabetical') {
+        // Sort by row names alphabetically
+        const sortedIndices = [...this.rowOrder].sort((a, b) => {
+          const nameA = this.rowNames[a].toLowerCase()
+          const nameB = this.rowNames[b].toLowerCase()
+          const comparison = nameA.localeCompare(nameB)
+          return direction === 'asc' ? comparison : -comparison
+        })
+        this.rowOrder = sortedIndices
+      } else {
+        // Sort by statistical method
+        const rowStats = this.rowOrder.map(rowIdx => ({
+          index: rowIdx,
+          stat: this.calculateStatistic(data[rowIdx], method)
+        }))
+
+        rowStats.sort((a, b) => {
+          const comparison = a.stat - b.stat
+          return direction === 'asc' ? comparison : -comparison
+        })
+
+        this.rowOrder = rowStats.map(item => item.index)
+      }
+    },
+
+    // Sort columns by specified method and direction
+    sortColumns(method: SortMethod, direction: SortDirection = 'desc') {
+      if (!this.hasData || this.initialData.length === 0) return
+
+      const data = this.normalizedData.length > 0 ? this.normalizedData : this.initialData
+
+      if (method === 'alphabetical') {
+        // Sort by column names alphabetically
+        const sortedIndices = [...this.columnOrder].sort((a, b) => {
+          const nameA = this.columnNames[a].toLowerCase()
+          const nameB = this.columnNames[b].toLowerCase()
+          const comparison = nameA.localeCompare(nameB)
+          return direction === 'asc' ? comparison : -comparison
+        })
+        this.columnOrder = sortedIndices
+      } else {
+        // Sort by statistical method
+        const colStats = this.columnOrder.map(colIdx => {
+          const columnValues = data.map(row => row[colIdx])
+          return {
+            index: colIdx,
+            stat: this.calculateStatistic(columnValues, method)
+          }
+        })
+
+        colStats.sort((a, b) => {
+          const comparison = a.stat - b.stat
+          return direction === 'asc' ? comparison : -comparison
+        })
+
+        this.columnOrder = colStats.map(item => item.index)
+      }
+    },
+
+    // Sort both rows and columns by the same method
+    sortMatrix(method: SortMethod, direction: SortDirection = 'desc') {
+      this.sortRows(method, direction)
+      this.sortColumns(method, direction)
+    },
+
+    // Reverse current row order
+    reverseRows() {
+      this.rowOrder.reverse()
+    },
+
+    // Reverse current column order
+    reverseColumns() {
+      this.columnOrder.reverse()
+    },
+
+    // Shuffle rows randomly
+    shuffleRows() {
+      for (let i = this.rowOrder.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1))
+        ;[this.rowOrder[i], this.rowOrder[j]] = [this.rowOrder[j], this.rowOrder[i]]
+      }
+    },
+
+    // Shuffle columns randomly
+    shuffleColumns() {
+      for (let i = this.columnOrder.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1))
+        ;[this.columnOrder[i], this.columnOrder[j]] = [this.columnOrder[j], this.columnOrder[i]]
+      }
+    },
+
+    // Advanced: Seriation algorithm to reveal patterns
+    // This reorders rows and columns to bring similar patterns together
+    applySeriation() {
+      if (!this.hasData || this.initialData.length === 0) return
+
+      const data = this.normalizedData.length > 0 ? this.normalizedData : this.initialData
+
+      // Simple seriation using hierarchical clustering approach
+      // Calculate similarity matrix for rows
+      const rowSimilarities: number[][] = []
+      for (let i = 0; i < data.length; i++) {
+        rowSimilarities[i] = []
+        for (let j = 0; j < data.length; j++) {
+          if (i === j) {
+            rowSimilarities[i][j] = 1
+          } else {
+            // Calculate correlation coefficient
+            const rowA = data[i]
+            const rowB = data[j]
+            rowSimilarities[i][j] = this.calculateCorrelation(rowA, rowB)
+          }
+        }
+      }
+
+      // Calculate similarity matrix for columns
+      const colSimilarities: number[][] = []
+      for (let i = 0; i < data[0].length; i++) {
+        colSimilarities[i] = []
+        for (let j = 0; j < data[0].length; j++) {
+          if (i === j) {
+            colSimilarities[i][j] = 1
+          } else {
+            const colA = data.map(row => row[i])
+            const colB = data.map(row => row[j])
+            colSimilarities[i][j] = this.calculateCorrelation(colA, colB)
+          }
+        }
+      }
+
+      // Apply simple greedy seriation
+      this.rowOrder = this.greedySeriation(rowSimilarities)
+      this.columnOrder = this.greedySeriation(colSimilarities)
+    },
+
+    // Helper function to calculate correlation coefficient
+    calculateCorrelation(a: number[], b: number[]): number {
+      const n = a.length
+      if (n !== b.length) return 0
+
+      const sumA = a.reduce((sum, val) => sum + val, 0)
+      const sumB = b.reduce((sum, val) => sum + val, 0)
+      const sumAB = a.reduce((sum, val, i) => sum + val * b[i], 0)
+      const sumA2 = a.reduce((sum, val) => sum + val * val, 0)
+      const sumB2 = b.reduce((sum, val) => sum + val * val, 0)
+
+      const numerator = n * sumAB - sumA * sumB
+      const denominator = Math.sqrt((n * sumA2 - sumA * sumA) * (n * sumB2 - sumB * sumB))
+
+      return denominator === 0 ? 0 : numerator / denominator
+    },
+
+    // Greedy seriation algorithm
+    greedySeriation(similarities: number[][]): number[] {
+      const n = similarities.length
+      if (n === 0) return []
+
+      const used = new Array(n).fill(false)
+      const result: number[] = []
+
+      // Start with the element that has the highest sum of similarities
+      let maxSum = -1
+      let startIdx = 0
+      for (let i = 0; i < n; i++) {
+        const sum = similarities[i].reduce((acc, val) => acc + val, 0)
+        if (sum > maxSum) {
+          maxSum = sum
+          startIdx = i
+        }
+      }
+
+      result.push(startIdx)
+      used[startIdx] = true
+
+      // Greedily add the most similar unused element
+      while (result.length < n) {
+        let maxSim = -1
+        let nextIdx = -1
+
+        for (let i = 0; i < n; i++) {
+          if (used[i]) continue
+
+          // Calculate similarity to already selected elements
+          let avgSim = 0
+          for (const selectedIdx of result) {
+            avgSim += similarities[i][selectedIdx]
+          }
+          avgSim /= result.length
+
+          if (avgSim > maxSim) {
+            maxSim = avgSim
+            nextIdx = i
+          }
+        }
+
+        if (nextIdx >= 0) {
+          result.push(nextIdx)
+          used[nextIdx] = true
+        } else {
+          // Add any remaining unused element
+          for (let i = 0; i < n; i++) {
+            if (!used[i]) {
+              result.push(i)
+              used[i] = true
+              break
+            }
+          }
+        }
+      }
+
+      return result
+    },
+
+    // Sort rows by similarity to a specific row
+    sortRowsBySimilarity(targetRowIndex: number, direction: SortDirection = 'desc') {
+      if (!this.hasData || targetRowIndex < 0 || targetRowIndex >= this.initialData.length) return
+
+      const data = this.normalizedData.length > 0 ? this.normalizedData : this.initialData
+      const targetRow = data[targetRowIndex]
+
+      const rowSimilarities = this.rowOrder.map(rowIdx => ({
+        index: rowIdx,
+        similarity: rowIdx === targetRowIndex ? 1 : this.calculateCorrelation(data[rowIdx], targetRow)
+      }))
+
+      rowSimilarities.sort((a, b) => {
+        const comparison = a.similarity - b.similarity
+        return direction === 'asc' ? comparison : -comparison
+      })
+
+      this.rowOrder = rowSimilarities.map(item => item.index)
+    },
+
+    // Sort columns by similarity to a specific column
+    sortColumnsBySimilarity(targetColIndex: number, direction: SortDirection = 'desc') {
+      if (!this.hasData || targetColIndex < 0 || targetColIndex >= this.initialData[0]?.length) return
+
+      const data = this.normalizedData.length > 0 ? this.normalizedData : this.initialData
+      const targetCol = data.map(row => row[targetColIndex])
+
+      const colSimilarities = this.columnOrder.map(colIdx => {
+        const col = data.map(row => row[colIdx])
+        return {
+          index: colIdx,
+          similarity: colIdx === targetColIndex ? 1 : this.calculateCorrelation(col, targetCol)
+        }
+      })
+
+      colSimilarities.sort((a, b) => {
+        const comparison = a.similarity - b.similarity
+        return direction === 'asc' ? comparison : -comparison
+      })
+
+      this.columnOrder = colSimilarities.map(item => item.index)
     },
   },
   getters: {

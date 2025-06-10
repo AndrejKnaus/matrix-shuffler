@@ -113,6 +113,85 @@
           Reset to Defaults
         </button>
       </div>
+
+      <div class="setting-group" v-if="datasetStore.hasData">
+        <h4>Matrix Sorting</h4>
+        <div class="sort-subsection">
+          <h5>Quick Actions</h5>
+          <div class="sort-button-grid">
+            <button @click="datasetStore.resetOrder()" class="sort-btn">Reset Order</button>
+            <button @click="datasetStore.shuffleRows()" class="sort-btn">Shuffle Rows</button>
+            <button @click="datasetStore.shuffleColumns()" class="sort-btn">Shuffle Cols</button>
+            <button @click="datasetStore.applySeriation()" class="sort-btn-accent">✨ Seriation</button>
+          </div>
+        </div>
+
+        <!-- Statistical Sorting -->
+        <div class="sort-subsection">
+          <h5>Statistical Sorting</h5>
+          <div class="sort-controls">
+            <label>Method:</label>
+            <select v-model="selectedMethod" class="sort-select">
+              <option value="sum">Sum</option>
+              <option value="mean">Mean</option>
+              <option value="median">Median</option>
+              <option value="max">Maximum</option>
+              <option value="min">Minimum</option>
+              <option value="variance">Variance</option>
+              <option value="alphabetical">Alphabetical</option>
+            </select>
+          </div>
+          <div class="sort-controls">
+            <label>Direction:</label>
+            <select v-model="selectedDirection" class="sort-select">
+              <option value="desc">Descending</option>
+              <option value="asc">Ascending</option>
+            </select>
+          </div>
+          <div class="sort-button-grid">
+            <button @click="sortRows" class="sort-btn">Sort Rows</button>
+            <button @click="sortColumns" class="sort-btn">Sort Columns</button>
+            <button @click="sortMatrix" class="sort-btn-accent">Sort Both</button>
+          </div>
+        </div>
+
+        <!-- Similarity Sorting -->
+        <div class="sort-subsection">
+          <h5>Similarity Sorting</h5>
+          <div class="sort-controls">
+            <label>Reference Row:</label>
+            <select v-model="selectedRowIndex" class="sort-select">
+              <option v-for="(name, index) in datasetStore.rowNames"
+                      :key="index"
+                      :value="index">
+                {{ name || `Row ${index + 1}` }}
+              </option>
+            </select>
+            <button @click="sortRowsBySimilarity" class="sort-btn full-width">Sort by Row Similarity</button>
+          </div>
+
+          <div class="sort-controls">
+            <label>Reference Column:</label>
+            <select v-model="selectedColIndex" class="sort-select">
+              <option v-for="(name, index) in datasetStore.columnNames"
+                      :key="index"
+                      :value="index">
+                {{ name || `Col ${index + 1}` }}
+              </option>
+            </select>
+            <button @click="sortColumnsBySimilarity" class="sort-btn full-width">Sort by Column Similarity</button>
+          </div>
+        </div>
+
+        <!-- Matrix Info -->
+        <div class="sort-subsection">
+          <h5>Matrix Info</h5>
+          <div class="matrix-info">
+            <span>{{ datasetStore.rowNames.length }} rows × {{ datasetStore.columnNames.length }} columns</span>
+            <span>Normalization: {{ datasetStore.normalizationType }}</span>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -120,11 +199,17 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { useVisualizationStore, type VisualizationSettings } from '@/stores/visualization'
-import { useDatasetStore } from '@/stores/dataset'
+import { useDatasetStore, type SortMethod, type SortDirection } from '@/stores/dataset'
 
 const visualizationStore = useVisualizationStore()
 const datasetStore = useDatasetStore()
 const isOpen = ref(false)
+
+// Sorting state
+const selectedMethod = ref<SortMethod>('sum')
+const selectedDirection = ref<SortDirection>('desc')
+const selectedRowIndex = ref(0)
+const selectedColIndex = ref(0)
 
 const localSettings = reactive<VisualizationSettings>({
   colorScheme: 'blues',
@@ -142,6 +227,10 @@ const colorSchemes = {
 
 const togglePanel = () => {
   isOpen.value = !isOpen.value
+
+  if (isOpen.value) {
+    window.dispatchEvent(new CustomEvent('closePanels', { detail: { except: 'settings' } }))
+  }
 }
 
 const applySettings = () => {
@@ -170,8 +259,27 @@ const resetSettings = () => {
   applySettings()
 }
 
+const sortRows = () => {
+  datasetStore.sortRows(selectedMethod.value, selectedDirection.value)
+}
+
+const sortColumns = () => {
+  datasetStore.sortColumns(selectedMethod.value, selectedDirection.value)
+}
+
+const sortMatrix = () => {
+  datasetStore.sortMatrix(selectedMethod.value, selectedDirection.value)
+}
+
+const sortRowsBySimilarity = () => {
+  datasetStore.sortRowsBySimilarity(selectedRowIndex.value, selectedDirection.value)
+}
+
+const sortColumnsBySimilarity = () => {
+  datasetStore.sortColumnsBySimilarity(selectedColIndex.value, selectedDirection.value)
+}
+
 onMounted(() => {
-  // Initialize local settings from store
   Object.assign(localSettings, visualizationStore.settings)
 })
 </script>
@@ -335,5 +443,106 @@ onMounted(() => {
 
 .btn-reset:hover {
   background: var(--color-border);
+}
+
+.sort-subsection {
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.sort-subsection:last-child {
+  border-bottom: none;
+}
+
+.sort-subsection h5 {
+  margin: 0 0 10px 0;
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.sort-button-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.sort-controls {
+  margin-bottom: 10px;
+}
+
+.sort-controls label {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.sort-select {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: white;
+  color: var(--color-text);
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+
+.sort-select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.sort-btn, .sort-btn-accent {
+  padding: 6px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: white;
+  color: var(--color-text);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 500;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.sort-btn:hover {
+  background: var(--color-background-soft);
+  border-color: var(--color-primary);
+}
+
+.sort-btn-accent {
+  background: var(--color-accent);
+  color: white;
+  border-color: var(--color-accent);
+}
+
+.sort-btn-accent:hover {
+  background: var(--color-accent-dark);
+}
+
+.sort-btn.full-width {
+  grid-column: 1 / -1;
+  margin-top: 5px;
+}
+
+.matrix-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--color-text-secondary);
+}
+
+.matrix-info span {
+  padding: 4px 8px;
+  background: var(--color-background-soft);
+  border-radius: 3px;
+  border: 1px solid var(--color-border);
 }
 </style>

@@ -7,12 +7,16 @@
 
   --color-background: #f8fafc; /* very light blue-tinted background */
   --color-background-soft: #e2e8f0; /* soft, muted blue background */
+  --color-background-mute: #d1d5db; /* more muted background */
 
   --color-on-hover: #fafafa; /* light grey for hover */
-  --color-accent: #cbd5e1; /* accent: soft blue-grey */
+  --color-accent: #10b981; /* accent: emerald green */
+  --color-accent-dark: #059669; /* darker accent variant */
   --color-border: #cbd5e1; /* light border */
   --color-text: #1e293b; /* dark slate for text */
+  --color-text-secondary: #64748b; /* secondary text color */
   --color-text-light: #fff;
+  --color-surface: #ffffff; /* surface color for panels */
 }
 
 html,
