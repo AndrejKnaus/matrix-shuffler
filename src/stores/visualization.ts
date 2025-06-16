@@ -22,6 +22,8 @@ export const useVisualizationStore = defineStore('visualization', {
       cellShape: 'circle',
       showLabels: true,
       encoding: 'color',
+      matrixCellDimension: 40,
+      matrixCellSpacing: 2
     },
     settings: {
       colorScheme: 'blues',

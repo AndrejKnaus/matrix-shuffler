@@ -6,6 +6,8 @@ export interface VisualizationConfig {
   cellShape: 'rect' | 'circle'
   showLabels: boolean
   encoding: VisualizationEncoding
+  matrixCellDimension: number
+  matrixCellSpacing: number
 }
 
 export type VisualizationEncoding = 'circle' | 'color' | 'circle-color' | 'color-text'

@@ -2,12 +2,11 @@
 import { computed } from 'vue'
 import PixiVisualization from './PixiVisualization.vue'
 import { useDatasetStore, type MatrixData } from '@/stores/dataset'
+import { useVisualizationStore } from '@/stores/visualization'
 import { generateRandomMatrix } from '@/utils/utils'
 
 const DEFAULT_ROW_SIZE = 5
 const DEFAULT_COLUMN_SIZE = 7
-const DEFAULT_CELL_SIZE = 40
-const DEFAULT_PADDING = 2
 
 const props = withDefaults(
   defineProps<{
@@ -23,6 +22,7 @@ const props = withDefaults(
 )
 
 const datasetStore = useDatasetStore()
+const visualizationStore = useVisualizationStore()
 
 const matrixData = computed<MatrixData | undefined>(() => {
   if (datasetStore.hasData) {
@@ -38,9 +38,11 @@ const matrixData = computed<MatrixData | undefined>(() => {
   <div class="pixi-matrix-outer">
     <PixiVisualization
       v-if="matrixData"
-      :cellSize="DEFAULT_CELL_SIZE"
-      :padding="DEFAULT_PADDING"
+      :cellSize="visualizationStore.config.matrixCellDimension"
+      :padding="visualizationStore.config.matrixCellSpacing"
       :matrixData="matrixData"
+      :width="visualizationStore.config.width"
+      :height="visualizationStore.config.height"
     />
     <div v-else class="no-data-container">
       <svg width="64" height="64" viewBox="0 0 64 64" aria-hidden="true" class="no-data-icon">

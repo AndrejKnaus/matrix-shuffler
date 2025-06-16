@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
-import { Application, Container, Graphics, BitmapText, FederatedPointerEvent } from 'pixi.js'
+import { Application, Container, Graphics, BitmapText, FederatedPointerEvent, Rectangle } from 'pixi.js'
 import { useVisualizationStore } from '../stores/visualization'
 import { type MatrixCell, type MatrixData } from '@/stores/dataset'
 
@@ -8,6 +8,14 @@ interface MatrixProps {
   cellSize: number
   padding: number
   matrixData: MatrixData
+  width: number
+  height: number
+}
+
+interface ExtendedContainer extends Container {
+  rowIndex: number
+  colIndex: number
+  destroy(options?: { children?: boolean; texture?: boolean; baseTexture?: boolean }): void
 }
 
 const props = withDefaults(defineProps<MatrixProps>(), {
@@ -20,12 +28,12 @@ const visualizationStore = useVisualizationStore()
 // Refs
 const containerRef = ref<HTMLDivElement | null>(null)
 const app = ref<Application | null>(null)
-const rowContainers = ref<Container[]>([])
-const cellContainers = ref<Container[][]>([])
+const rowContainers = ref<ExtendedContainer[]>([])
+const cellContainers = ref<ExtendedContainer[][]>([])
 const rowSize = ref(0)
 const columnSize = ref(0)
 const rowLabelPadding = ref(0)
-const columnLabelObjects = ref<any[]>([])
+const columnLabelObjects = ref<BitmapText[]>([])
 const columnLabelPadding = ref(0)
 const isPanning = ref(false)
 let panStart = { x: 0, y: 0 }
@@ -46,8 +54,8 @@ interface DragState {
   originalColIndex: number
   originalY: number
   originalX: number
-  selectedRowContainer: Container | null
-  selectedCells: Container[]
+  selectedRowContainer: ExtendedContainer | null
+  selectedCells: ExtendedContainer[]
 }
 
 const dragState = ref<DragState>({
@@ -98,7 +106,7 @@ const clearStage = () => {
   if (!app.value) return
 
   while (app.value.stage.children.length > 0) {
-    const child = app.value.stage.children[0]
+    const child = app.value.stage.children[0] as Container
     app.value.stage.removeChild(child)
     child.destroy()
   }
@@ -116,7 +124,7 @@ const setupDragHandling = (cellSize: number, padding: number) => {
       const cellInfo = props.matrixData.values[row][col]
 
       cell.on('pointerdown', (event: FederatedPointerEvent) => {
-        if (dragState.value.isDragging) return
+        if (dragState.value.isDragging || !app.value) return
 
         if (isPanning.value) {
           //event.stopPropagation()
@@ -138,10 +146,10 @@ const setupDragHandling = (cellSize: number, padding: number) => {
           selectedCells: [],
         }
 
-        app.value!.stage.eventMode = 'static'
-        app.value!.stage.hitArea = app.value!.screen
+        app.value.stage.eventMode = 'static'
+        app.value.stage.hitArea = app.value.screen
 
-        const onPointerMove = (moveEvent: PIXI.FederatedPointerEvent) => {
+        const onPointerMove = (moveEvent: FederatedPointerEvent) => {
           if (!dragState.value.isDragging) return
 
           const dx = moveEvent.global.x - dragState.value.startX
@@ -164,6 +172,20 @@ const setupDragHandling = (cellSize: number, padding: number) => {
           } else if (dragState.value.dragMode === 'column') {
             handleColumnDrag(dx, cellSize, padding)
           }
+        }
+
+        const onDOMMove = (e: MouseEvent | TouchEvent) => {
+          if (!app.value) return
+          const rect = app.value.canvas.getBoundingClientRect()
+          const x = e instanceof MouseEvent ? e.clientX : e.touches[0].clientX
+          const y = e instanceof MouseEvent ? e.clientY : e.touches[0].clientY
+          const point = {
+            global: {
+              x: ((x - rect.left) * app.value.canvas.width) / rect.width,
+              y: ((y - rect.top) * app.value.canvas.height) / rect.height,
+            },
+          } as FederatedPointerEvent
+          onPointerMove(point)
         }
 
         const resetColumnLabelPositions = (cellSize: number, padding: number) => {
@@ -189,8 +211,8 @@ const setupDragHandling = (cellSize: number, padding: number) => {
             selectedCells: [],
           }
 
-          document.removeEventListener('mousemove', onPointerMove)
-          document.removeEventListener('touchmove', onPointerMove)
+          document.removeEventListener('mousemove', onDOMMove)
+          document.removeEventListener('touchmove', onDOMMove)
           app.value?.stage.off('pointermove', onPointerMove)
           app.value?.stage.off('pointerup', onPointerUp)
           app.value?.stage.off('pointerupoutside', onPointerUp)
@@ -210,8 +232,8 @@ const setupDragHandling = (cellSize: number, padding: number) => {
         }
 
         app.value?.stage.on('pointermove', onPointerMove)
-        document.addEventListener('mousemove', onPointerMove)
-        document.addEventListener('touchmove', onPointerMove)
+        document.addEventListener('mousemove', onDOMMove)
+        document.addEventListener('touchmove', onDOMMove)
 
         app.value?.stage.on('pointerup', onPointerUp)
         app.value?.stage.on('pointerupoutside', onPointerUp)
@@ -364,6 +386,10 @@ const updateCellIndices = () => {
 }
 
 const renderMatrix = (cellSize: number, padding: number, container: Container) => {
+  // Make the main container interactive
+  container.eventMode = 'static'
+  container.hitArea = app.value?.screen
+
   // Pre-calculate min/max for auto-normalization if needed
   const allValues = props.matrixData.values.flat().map(cell => cell.initialValue).filter(v => !isNaN(v))
   const needsAutoNormalization = props.matrixData.values.some(row =>
@@ -443,7 +469,10 @@ const renderMatrix = (cellSize: number, padding: number, container: Container) =
   columnLabelPadding.value = maxLabelHeight + labelPadding
 
   for (let row = 0; row < props.matrixData.rowNames.length; row++) {
-    const rowContainer = new Container()
+    const rowContainer = new Container() as ExtendedContainer
+    rowContainer.rowIndex = row
+    rowContainer.colIndex = -1
+    rowContainer.eventMode = 'static'
     rowContainers.value[row] = rowContainer
     cellContainers.value[row] = []
 
@@ -506,11 +535,13 @@ const createCell = (
   needsAutoNormalization: boolean = false,
   globalMin: number = 0,
   globalMax: number = 1,
-) => {
+): ExtendedContainer => {
   try {
-    const cell = new Container()
+    const cell = new Container() as ExtendedContainer
     cell.rowIndex = row
     cell.colIndex = col
+    cell.eventMode = 'dynamic'
+    cell.cursor = 'pointer'
 
     const rect = new Graphics()
 
@@ -552,19 +583,19 @@ const createCell = (
     }
 
     cell.x = col * (cellSize + padding) + rowLabelPadding.value
-    cell.eventMode = 'dynamic'
-    cell.cursor = 'pointer'
 
     return cell
   } catch (error) {
     console.error('Error creating cell at', row, col, ':', error)
     // Return a simple fallback cell
-    const fallbackCell = new Container()
+    const fallbackCell = new Container() as ExtendedContainer
     const rect = new Graphics()
     rect.fill({ color: 0xcccccc, alpha: 0.5 })
     rect.rect(0, 0, cellSize, cellSize)
     fallbackCell.addChild(rect)
     fallbackCell.x = col * (cellSize + padding) + rowLabelPadding.value
+    fallbackCell.rowIndex = row
+    fallbackCell.colIndex = col
     return fallbackCell
   }
 }
@@ -577,7 +608,7 @@ const createCircleCell = (
   normalizedValue: number,
 ) => {
   const borderColor = getInterpolatedColor(normalizedValue)
-  rect.setStrokeStyle({ width: 1, color: borderColor })
+  rect.setStrokeStyle({ width: 1, color: borderColor, alignment: 0.5 }) // Align stroke to pixel boundaries
   rect.fill({ color: 0xfff, alpha: 0 })
   rect.rect(0, 0, cellSize, cellSize)
   rect.endFill()
@@ -698,8 +729,8 @@ const createMatrixVisualization = () => {
   const cols = props.matrixData.columnNames.length
 
   // Use configured cell size, fallback to automatic calculation
-  let cellSize = visualizationStore.config.cellSize || props.cellSize
-  const padding = visualizationStore.config.padding || props.padding
+  let cellSize = visualizationStore.config.matrixCellDimension || props.cellSize
+  const padding = visualizationStore.config.matrixCellSpacing || props.padding
 
   if (!cellSize) {
     const viewportWidth = app.value.screen.width
@@ -749,6 +780,24 @@ const resetCellPositions = (cellSize: number, padding: number) => {
 
 const roundTooltipNumber = (value: number | undefined): string => {
   return value !== undefined ? Number(value.toFixed(3)).toString() : '-'
+}
+
+const handlePanStart = (event: KeyboardEvent) => {
+  if (event.key === panModifier && !isPanning.value) {
+    isPanning.value = true
+    if (app.value) {
+      app.value.stage.cursor = 'grab'
+    }
+  }
+}
+
+const handlePanEnd = (event: KeyboardEvent) => {
+  if (event.key === panModifier && isPanning.value) {
+    isPanning.value = false
+    if (app.value) {
+      app.value.stage.cursor = 'default'
+    }
+  }
 }
 
 const handleKeyDown = (e: KeyboardEvent) => {
@@ -861,11 +910,13 @@ function onPanPointerDown(e: FederatedPointerEvent) {
     container.x = containerStart.x + dx
     container.y = containerStart.y + dy
   }
+
   function onUp() {
-    app.value!.stage.off('pointermove', onMove)
-    app.value!.stage.off('pointerup', onUp)
-    app.value!.stage.off('pointerupoutside', onUp)
-    app.value!.stage.cursor = 'grab'
+    if (!app.value) return
+    app.value.stage.off('pointermove', onMove)
+    app.value.stage.off('pointerup', onUp)
+    app.value.stage.off('pointerupoutside', onUp)
+    app.value.stage.cursor = 'grab'
   }
 
   app.value.stage.on('pointermove', onMove)
@@ -941,3 +992,4 @@ onUnmounted(() => {
   border: #222 solid 0.5px;
 }
 </style>
+
