@@ -50,41 +50,32 @@
         </div>
       </div>
 
-      
-    <div class="setting-group">
-    <h3 class="settings-heading">Label Rotation</h3>
-    <label>
-      Rotate Column Labels: {{ localSettings.labelRotation }}°
-      <input
-        type="range"
-        min="0"
-        max="90"
-        step="1"
-        v-model="localSettings.labelRotation"
-        @input="applySettings"
-      />
-    </label>
-  </div>
+      <div class="setting-group">
+        <h3 class="settings-heading">Label Rotation</h3>
+        <label>
+          Rotate Column Labels: {{ localSettings.labelRotation }}°
+          <input
+            type="range"
+            min="0"
+            max="90"
+            step="1"
+            v-model="localSettings.labelRotation"
+            @input="applySettings"
+          />
+        </label>
+      </div>
 
       <div class="setting-group">
         <h3 class="settings-heading">Visualization Colors</h3>
         <div class="color-inputs">
           <div class="color-input-group">
             <label>Min Color:</label>
-            <input
-              type="color"
-              v-model="localSettings.minColor"
-              @change="applySettings"
-            />
+            <input type="color" v-model="localSettings.minColor" @change="applySettings" />
             <span class="color-preview" :style="{ backgroundColor: localSettings.minColor }"></span>
           </div>
           <div class="color-input-group">
             <label>Max Color:</label>
-            <input
-              type="color"
-              v-model="localSettings.maxColor"
-              @change="applySettings"
-            />
+            <input type="color" v-model="localSettings.maxColor" @change="applySettings" />
             <span class="color-preview" :style="{ backgroundColor: localSettings.maxColor }"></span>
           </div>
         </div>
@@ -125,9 +116,7 @@
       </div>
 
       <div class="setting-group">
-        <button @click="resetSettings" class="btn-reset">
-          Reset to Defaults
-        </button>
+        <button @click="resetSettings" class="btn-reset">Reset to Defaults</button>
       </div>
 
       <div class="setting-group" v-if="datasetStore.hasData">
@@ -138,7 +127,9 @@
             <button @click="datasetStore.resetOrder()" class="sort-btn">Reset Order</button>
             <button @click="datasetStore.shuffleRows()" class="sort-btn">Shuffle Rows</button>
             <button @click="datasetStore.shuffleColumns()" class="sort-btn">Shuffle Cols</button>
-            <button @click="datasetStore.applySeriation()" class="sort-btn-accent">✨ Seriation</button>
+            <button @click="datasetStore.applySeriation()" class="sort-btn-accent">
+              ✨ Seriation
+            </button>
           </div>
         </div>
 
@@ -177,25 +168,25 @@
           <div class="sort-controls">
             <label>Reference Row:</label>
             <select v-model="selectedRowIndex" class="sort-select">
-              <option v-for="(name, index) in datasetStore.rowNames"
-                      :key="index"
-                      :value="index">
+              <option v-for="(name, index) in datasetStore.rowNames" :key="index" :value="index">
                 {{ name || `Row ${index + 1}` }}
               </option>
             </select>
-            <button @click="sortRowsBySimilarity" class="sort-btn full-width">Sort by Row Similarity</button>
+            <button @click="sortRowsBySimilarity" class="sort-btn full-width">
+              Sort by Row Similarity
+            </button>
           </div>
 
           <div class="sort-controls">
             <label>Reference Column:</label>
             <select v-model="selectedColIndex" class="sort-select">
-              <option v-for="(name, index) in datasetStore.columnNames"
-                      :key="index"
-                      :value="index">
+              <option v-for="(name, index) in datasetStore.columnNames" :key="index" :value="index">
                 {{ name || `Col ${index + 1}` }}
               </option>
             </select>
-            <button @click="sortColumnsBySimilarity" class="sort-btn full-width">Sort by Column Similarity</button>
+            <button @click="sortColumnsBySimilarity" class="sort-btn full-width">
+              Sort by Column Similarity
+            </button>
           </div>
         </div>
 
@@ -203,18 +194,17 @@
         <div class="sort-subsection">
           <h5>Matrix Info</h5>
           <div class="matrix-info">
-            <span>{{ datasetStore.rowNames.length }} rows × {{ datasetStore.columnNames.length }} columns</span>
+            <span
+              >{{ datasetStore.rowNames.length }} rows ×
+              {{ datasetStore.columnNames.length }} columns</span
+            >
             <span>Normalization: {{ datasetStore.normalizationType }}</span>
           </div>
         </div>
       </div>
     </div>
   </div>
-
-
-
 </template>
-
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
@@ -233,16 +223,17 @@ const selectedColIndex = ref(0)
 
 const localSettings = reactive<VisualizationSettings>({
   colorScheme: 'blues',
-  minColor: '#f0f8ff',
-  maxColor: '#1e40af',
-  normalization: 'none'
+  minColor: '#e3f0fb',
+  maxColor: '#7daee6',
+  normalization: 'none',
+  labelRotation: 90,
 })
 
 const colorSchemes = {
-  blues: { minColor: '#f0f8ff', maxColor: '#1e40af' },
-  reds: { minColor: '#fef2f2', maxColor: '#dc2626' },
-  greens: { minColor: '#f0fdf4', maxColor: '#16a34a' },
-  viridis: { minColor: '#440154', maxColor: '#fde725' }
+  blues: { minColor: '#e3f0fb', maxColor: '#7daee6' },
+  reds: { minColor: '#fde8e8', maxColor: '#f59e9e' },
+  greens: { minColor: '#e6f9ed', maxColor: '#7ed6a2' },
+  viridis: { minColor: '#e0e7f3', maxColor: '#b5e3b5' },
 }
 
 const togglePanel = () => {
@@ -276,6 +267,7 @@ const resetSettings = () => {
   localSettings.minColor = '#f0f8ff'
   localSettings.maxColor = '#1e40af'
   localSettings.normalization = 'none'
+  localSettings.labelRotation = 90
   applySettings()
 }
 
@@ -305,7 +297,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-
 .settings-heading {
   text-transform: uppercase;
   font-size: 13px;
@@ -327,7 +318,6 @@ onMounted(() => {
   border-radius: 8px 0 0 8px;
   box-shadow: -2px 2px 8px rgba(0, 0, 0, 0.1);
   z-index: 1001;
-  //transform: translateX(calc(100% - 100px));
   transition: transform 0.3s ease;
 }
 
@@ -421,7 +411,7 @@ onMounted(() => {
   font-size: 14px;
 }
 
-.color-input-group input[type="color"] {
+.color-input-group input[type='color'] {
   width: 40px;
   height: 30px;
   border: 1px solid var(--color-border);
@@ -530,7 +520,8 @@ onMounted(() => {
   border-color: var(--color-primary);
 }
 
-.sort-btn, .sort-btn-accent {
+.sort-btn,
+.sort-btn-accent {
   padding: 6px 8px;
   border: 1px solid var(--color-border);
   border-radius: 4px;

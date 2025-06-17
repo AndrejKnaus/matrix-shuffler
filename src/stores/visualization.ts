@@ -24,15 +24,15 @@ export const useVisualizationStore = defineStore('visualization', {
       showLabels: true,
       encoding: 'color',
       matrixCellDimension: 40,
-      matrixCellSpacing: 2
+      matrixCellSpacing: 2,
     },
     settings: {
       colorScheme: 'blues',
-      minColor: '#f0f8ff',
-      maxColor: '#1e40af',
+      minColor: '#e3f0fb',
+      maxColor: '#7daee6',
       normalization: 'none',
-      labelRotation: 0
-    }
+      labelRotation: 90,
+    },
   }),
   actions: {
     updateConfig(partialConfig: Partial<VisualizationConfig>) {
@@ -46,6 +46,6 @@ export const useVisualizationStore = defineStore('visualization', {
     },
     setNormalization(normalization: 'none' | 'row' | 'column' | 'global') {
       this.settings.normalization = normalization
-    }
+    },
   },
 })
