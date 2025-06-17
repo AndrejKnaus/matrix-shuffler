@@ -5,10 +5,23 @@
       <div class="data-table-controls">
         <div class="button-group">
           <button @click="loadSampleData" class="btn-primary">Load Sample Data</button>
-          <button @click="clearData" class="btn-secondary">Clear</button>
-          <button @click="transposeData" class="btn-secondary">Transpose</button>
+          <button @click="clearData" class="btn-secondary">Clear</button> 
         </div>
         <span class="data-status">{{ getDataStatus }}</span>
+          <!-- Recently Loaded Datasets -->
+       <div v-if="recentDatasets.length" class="recent-datasets">
+          <h4 class="recent-title">Recently Loaded:</h4>
+          <div class="recent-list">
+            <button
+              v-for="(ds, index) in recentDatasets"
+              :key="index"
+              @click="loadFromCSV(ds.data, ds.name)"
+              class="recent-btn"
+            >
+               {{ ds.name }}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
     <div class="handsontable-container" ref="tableContainer">
@@ -41,6 +54,31 @@ import { HotTable } from '@handsontable/vue3'
 import 'handsontable/dist/handsontable.full.min.css'
 import { useDatasetStore } from '@/stores/dataset'
 import { useVisualizationStore } from '@/stores/visualization'
+
+type RecentDataset = {
+  name: string
+  data: TableData
+}
+
+const recentDatasets = ref<RecentDataset[]>([])
+
+const loadRecentDatasets = () => {
+  const saved = localStorage.getItem('recentDatasets')
+  recentDatasets.value = saved ? JSON.parse(saved) : []
+  
+}
+
+const saveRecentDataset = (name: string, data: TableData) => {
+  const newEntry = { name, data }
+
+  // Remove existing entry with same name
+  const filtered = recentDatasets.value.filter(d => d.name !== name)
+  const updated = [newEntry, ...filtered].slice(0, 5) // max 5
+
+  recentDatasets.value = updated
+  localStorage.setItem('recentDatasets', JSON.stringify(updated))
+}
+
 
 type CellValue = string | number | null
 type TableData = CellValue[][]
@@ -150,6 +188,7 @@ const loadSampleData = () => {
   tableKey.value++
   updateDatasetStore(tableData.value)
   emit('dataChanged', tableData.value)
+  saveRecentDataset('Sample Data', tableData.value)
 }
 
 const clearData = () => {
@@ -167,11 +206,13 @@ const clearData = () => {
   emit('dataChanged', tableData.value)
 }
 
-const loadFromCSV = (csvData: TableData) => {
+const loadFromCSV = (csvData: TableData, name = 'Imported CSV') => {
+  console.log('loadFromCSV:', name) 
   tableData.value = csvData
   tableKey.value++
   updateDatasetStore(csvData)
   emit('dataChanged', tableData.value)
+  saveRecentDataset(name, csvData)
 }
 
 const transposeData = () => {
@@ -196,7 +237,8 @@ const transposeData = () => {
 }
 
 defineExpose({
-  loadFromCSV
+  loadFromCSV,
+  transposeData
 })
 
 const onDataChange = (changes: unknown) => {
@@ -208,10 +250,44 @@ const onDataChange = (changes: unknown) => {
 
 onMounted(() => {
   // Component ready
+  loadRecentDatasets()
 })
 </script>
 
 <style scoped>
+
+.recent-datasets {
+  margin-top: 12px;
+}
+
+.recent-title {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: var(--color-text);
+}
+
+.recent-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.recent-btn {
+  background: white;
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  padding: 6px 10px;
+  font-size: 13px;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+
+.recent-btn:hover {
+  background: var(--color-background-soft);
+}
 .data-table-container {
   display: flex;
   flex-direction: column;

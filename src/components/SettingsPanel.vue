@@ -9,7 +9,7 @@
 
     <div class="panel-content" v-show="isOpen">
       <div class="setting-group">
-        <h4>Normalization</h4>
+        <h3 class="settings-heading">Normalization</h3>
         <div class="radio-group">
           <label>
             <input
@@ -50,8 +50,24 @@
         </div>
       </div>
 
+      
+    <div class="setting-group">
+    <h3 class="settings-heading">Label Rotation</h3>
+    <label>
+      Rotate Column Labels: {{ localSettings.labelRotation }}°
+      <input
+        type="range"
+        min="0"
+        max="90"
+        step="1"
+        v-model="localSettings.labelRotation"
+        @input="applySettings"
+      />
+    </label>
+  </div>
+
       <div class="setting-group">
-        <h4>Visualization Colors</h4>
+        <h3 class="settings-heading">Visualization Colors</h3>
         <div class="color-inputs">
           <div class="color-input-group">
             <label>Min Color:</label>
@@ -75,7 +91,7 @@
       </div>
 
       <div class="setting-group">
-        <h4>Color Scheme Presets</h4>
+        <h3 class="settings-heading">Color Scheme Presets</h3>
         <div class="color-schemes">
           <button
             @click="applyColorScheme('blues')"
@@ -115,7 +131,7 @@
       </div>
 
       <div class="setting-group" v-if="datasetStore.hasData">
-        <h4>Matrix Sorting</h4>
+        <h3 class="settings-heading">Matrix Sorting</h3>
         <div class="sort-subsection">
           <h5>Quick Actions</h5>
           <div class="sort-button-grid">
@@ -194,7 +210,11 @@
       </div>
     </div>
   </div>
+
+
+
 </template>
+
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
@@ -285,6 +305,18 @@ onMounted(() => {
 </script>
 
 <style scoped>
+
+.settings-heading {
+  text-transform: uppercase;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  color: #333;
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--color-border);
+  margin-top: 32px;
+}
 .settings-panel {
   position: fixed;
   top: 60px;

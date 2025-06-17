@@ -7,6 +7,7 @@ export interface VisualizationSettings {
   minColor: string
   maxColor: string
   normalization: 'none' | 'row' | 'column' | 'global'
+  labelRotation: number
 }
 
 export const useVisualizationStore = defineStore('visualization', {
@@ -29,7 +30,8 @@ export const useVisualizationStore = defineStore('visualization', {
       colorScheme: 'blues',
       minColor: '#f0f8ff',
       maxColor: '#1e40af',
-      normalization: 'none'
+      normalization: 'none',
+      labelRotation: 0
     }
   }),
   actions: {

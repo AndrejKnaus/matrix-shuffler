@@ -4,6 +4,8 @@ import { ref } from 'vue'
 import PixiVisualizationWrapper from './components/PixiVisualizationWrapper.vue'
 import DataTable from './components/DataTable.vue'
 import SettingsPanel from './components/SettingsPanel.vue'
+import ResizableDrawer from './components/ResizableDrawer.vue'
+
 import { useVisualizationStore } from './stores/visualization'
 
 
@@ -32,6 +34,10 @@ const handleDataChange = () => {
   // Data updated in visualization
 }
 
+const handleTranspose = () => {
+  dataTableRef.value?.transposeData()
+}
+
 const handleCSVImport = (event: Event) => {
   const target = event.target as HTMLInputElement
   const file = target.files?.[0]
@@ -55,7 +61,8 @@ const handleCSVImport = (event: Event) => {
 
         // Load data into the table
         if (dataTableRef.value && data.length > 0) {
-          dataTableRef.value.loadFromCSV(data)
+          const displayName = file.name?.replace(/\.[^/.]+$/, '') || 'Imported CSV'
+          dataTableRef.value.loadFromCSV(data, displayName)
         }
       }
     }
@@ -94,6 +101,7 @@ const handleCSVImport = (event: Event) => {
             <div class="dropdown-content">
               <a href="#">Reset Data Order</a>
               <a href="#">Apply Reordering Algorithm</a>
+              <a href="#" @click.prevent="handleTranspose">Transpose Matrix</a>
             </div>
           </li>
 
@@ -124,9 +132,9 @@ const handleCSVImport = (event: Event) => {
         <!-- Main Content Area -->
         <div class="main-content">
           <!-- Data Table Panel -->
-          <div class="data-panel">
-            <DataTable ref="dataTableRef" @dataChanged="handleDataChange" />
-          </div>
+          <ResizableDrawer>
+             <DataTable ref="dataTableRef" @dataChanged="handleDataChange" />
+          </ResizableDrawer>
 
         <!-- PixiJS Visualization View -->
         <div class="visualization-view">
@@ -395,7 +403,7 @@ const handleCSVImport = (event: Event) => {
 }
 
 .visualization-view {
-  flex: 1;
+  flex: 1 1 0;
   min-height: 0;
   min-width: 0;
   display: flex;

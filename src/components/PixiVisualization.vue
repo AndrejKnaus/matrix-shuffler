@@ -449,7 +449,9 @@ const renderMatrix = (cellSize: number, padding: number, container: Container) =
         fill: '#000000',
       },
     })
-    colLabel.rotation = -Math.PI / 2 // Rotate the label 90 degrees counter-clockwise
+    //colLabel.rotation = -Math.PI / 2 // Rotate the label 90 degrees counter-clockwise
+    const rotationDegrees = visualizationStore.settings.labelRotation
+    colLabel.rotation = -(rotationDegrees * Math.PI) / 180
     colLabel.x = col * (cellSize + padding) + rowLabelPadding.value + cellSize / 2
     colLabel.y = 0
     colLabel.anchor = { x: 0, y: 0.5 }
