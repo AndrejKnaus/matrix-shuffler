@@ -8,7 +8,6 @@ import ResizableDrawer from './components/ResizableDrawer.vue'
 
 import { useVisualizationStore } from './stores/visualization'
 
-
 import { useFileUpload } from '@/utils/utils'
 
 const showImportModal = ref(false) // New ref for modal visibility
@@ -29,9 +28,18 @@ const closeImportModal = () => {
 
 const { fileError } = useFileUpload()
 const dataTableRef = ref()
+const pixiVisRef = ref<typeof PixiVisualizationWrapper | null>(null)
+const importedDisplayName = ref<string | null>(null)
 
 const handleDataChange = () => {
   // Data updated in visualization
+}
+
+const exportAsPNG = () => {
+  const name = importedDisplayName.value
+    ? importedDisplayName.value.replace(/\.[^/.]+$/, '.png')
+    : 'exported_image.png'
+  pixiVisRef.value?.$refs?.pixiVisualizationRef?.exportCanvasAsPNG?.(name)
 }
 
 const handleTranspose = () => {
@@ -48,9 +56,9 @@ const handleCSVImport = (event: Event) => {
       const csv = e.target?.result as string
       if (csv) {
         // Parse CSV data
-        const lines = csv.split('\n').filter(line => line.trim())
-        const data = lines.map(line => {
-          const values = line.split(',').map(val => val.trim())
+        const lines = csv.split('\n').filter((line) => line.trim())
+        const data = lines.map((line) => {
+          const values = line.split(',').map((val) => val.trim())
           return values.map((val, index) => {
             // First column is usually text (item names), others are numbers
             if (index === 0) return val
@@ -62,6 +70,7 @@ const handleCSVImport = (event: Event) => {
         // Load data into the table
         if (dataTableRef.value && data.length > 0) {
           const displayName = file.name?.replace(/\.[^/.]+$/, '') || 'Imported CSV'
+          importedDisplayName.value = displayName
           dataTableRef.value.loadFromCSV(data, displayName)
         }
       }
@@ -83,7 +92,7 @@ const handleCSVImport = (event: Event) => {
               <a href="#" @click.prevent="handleImportData">Import Data</a>
               <a href="#">Load Example Dataset</a>
               <a href="#">Export Data</a>
-              <a href="#">Export as PNG</a>
+              <a href="#" @click="exportAsPNG">Export as PNG</a>
               <a href="#">Export as SVG</a>
             </div>
           </li>
@@ -92,7 +101,9 @@ const handleCSVImport = (event: Event) => {
             <div class="dropdown-content">
               <a href="#" @click.prevent="changeEncoding('circle')">Display as Circles</a>
               <a href="#" @click.prevent="changeEncoding('color')">Display as Colors</a>
-              <a href="#" @click.prevent="changeEncoding('circle-color')">Display as Circle+Color</a>
+              <a href="#" @click.prevent="changeEncoding('circle-color')"
+                >Display as Circle+Color</a
+              >
               <a href="#" @click.prevent="changeEncoding('color-text')">Display as Color+Text</a>
             </div>
           </li>
@@ -109,8 +120,12 @@ const handleCSVImport = (event: Event) => {
             <a href="#" class="dropbtn">Help</a>
             <div class="dropdown-content">
               <a href="#">About</a>
-              <a href="#">Github</a>
-              <a href="#">How to Use</a>
+              <a
+                href="https://github.com/AndrejKnaus/matrix-shuffler"
+                target="_blank"
+                rel="noopener"
+                >Github</a
+              >
             </div>
           </li>
         </ul>
@@ -133,16 +148,15 @@ const handleCSVImport = (event: Event) => {
         <div class="main-content">
           <!-- Data Table Panel -->
           <ResizableDrawer>
-             <DataTable ref="dataTableRef" @dataChanged="handleDataChange" />
+            <DataTable ref="dataTableRef" @dataChanged="handleDataChange" />
           </ResizableDrawer>
 
-        <!-- PixiJS Visualization View -->
-        <div class="visualization-view">
-            <PixiVisualizationWrapper :useRandomData="false" />
+          <!-- PixiJS Visualization View -->
+          <div class="visualization-view">
+            <PixiVisualizationWrapper ref="pixiVisRef" :useRandomData="false" />
           </div>
         </div>
       </div>
-
     </main>
 
     <SettingsPanel />
@@ -153,11 +167,7 @@ const handleCSVImport = (event: Event) => {
         <h3>Import Data</h3>
         <p>Select the dataset</p>
         <!-- Example: File input for import -->
-        <input
-          type="file"
-          accept=".csv,.tsv"
-          @change="handleCSVImport"
-        />
+        <input type="file" accept=".csv,.tsv" @change="handleCSVImport" />
         <div v-if="fileError" class="file-error">
           <p>Error: {{ fileError }}</p>
         </div>
@@ -173,11 +183,7 @@ const handleCSVImport = (event: Event) => {
         -->
         <div class="modal-actions">
           <button @click="closeImportModal">Cancel</button>
-          <button
-            @click="closeImportModal"
-          >
-            Import
-          </button>
+          <button @click="closeImportModal">Import</button>
           <!--
           <button v-if="fileData" @click="showFileData = !showFileData" style="margin-left: 10px">
             {{ showFileData ? 'Hide' : 'Show' }} File Summary

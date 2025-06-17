@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
-import { Application, Container, Graphics, BitmapText, FederatedPointerEvent, Rectangle } from 'pixi.js'
+import {
+  Application,
+  Container,
+  Graphics,
+  BitmapText,
+  FederatedPointerEvent,
+  Rectangle,
+} from 'pixi.js'
 import { useVisualizationStore } from '../stores/visualization'
 import { type MatrixCell, type MatrixData } from '@/stores/dataset'
 
@@ -70,6 +77,20 @@ const dragState = ref<DragState>({
   selectedRowContainer: null,
   selectedCells: [],
 })
+
+const exportCanvasAsPNG = (filename: string = 'matrix-shuffler.png') => {
+  console.log('Exporting canvas as PNG...')
+  if (!app.value) return
+  const canvas = app.value.renderer.extract.canvas(app.value.stage)
+  const base64 = canvas.toDataURL('image/png')
+  // Create a download link
+  const link = document.createElement('a')
+  link.href = base64
+  link.download = filename
+  link.click()
+}
+
+defineExpose({ exportCanvasAsPNG })
 
 const initializePixi = async () => {
   if (!containerRef.value) {
@@ -391,9 +412,12 @@ const renderMatrix = (cellSize: number, padding: number, container: Container) =
   container.hitArea = app.value?.screen
 
   // Pre-calculate min/max for auto-normalization if needed
-  const allValues = props.matrixData.values.flat().map(cell => cell.initialValue).filter(v => !isNaN(v))
-  const needsAutoNormalization = props.matrixData.values.some(row =>
-    row.some(cell => cell.normalizedValue === undefined)
+  const allValues = props.matrixData.values
+    .flat()
+    .map((cell) => cell.initialValue)
+    .filter((v) => !isNaN(v))
+  const needsAutoNormalization = props.matrixData.values.some((row) =>
+    row.some((cell) => cell.normalizedValue === undefined),
   )
 
   let globalMin = Math.min(...allValues)
@@ -485,7 +509,16 @@ const renderMatrix = (cellSize: number, padding: number, container: Container) =
 
     for (let col = 0; col < props.matrixData.columnNames.length; col++) {
       const value = props.matrixData.values[row][col]
-      const cell = createCell(row, col, value, cellSize, padding, needsAutoNormalization, globalMin, globalMax)
+      const cell = createCell(
+        row,
+        col,
+        value,
+        cellSize,
+        padding,
+        needsAutoNormalization,
+        globalMin,
+        globalMax,
+      )
       rowContainer.addChild(cell)
       cellContainers.value[row][col] = cell
     }
@@ -548,9 +581,10 @@ const createCell = (
     const rect = new Graphics()
 
     const initialValue = isNaN(value.initialValue) ? 0 : value.initialValue
-    let normalizedValue = value.normalizedValue !== undefined && !isNaN(value.normalizedValue)
-      ? value.normalizedValue
-      : initialValue
+    let normalizedValue =
+      value.normalizedValue !== undefined && !isNaN(value.normalizedValue)
+        ? value.normalizedValue
+        : initialValue
 
     // If no normalization was applied (normalizedValue equals initialValue),
     // we need to normalize for display purposes using pre-calculated global min/max
@@ -756,11 +790,36 @@ const createMatrixVisualization = () => {
     clearStage()
 
     const container = new Container()
-    app.value.stage.addChild(container)
+    const exportPadding = 20
 
-    renderMatrix(cellSize, padding, container)
-    centerContainer(container)
+    // Create a sub-container for the matrix and center it in the padded area
+    const matrixContainer = new Container()
+    renderMatrix(cellSize, padding, matrixContainer)
+
+    const contentWidth = cols * (cellSize + padding) + rowLabelPadding.value
+    const contentHeight = rows * (cellSize + padding) + columnLabelPadding.value
+
+    // Set the renderer size to fit content + padding
+    const totalWidth = contentWidth + exportPadding * 2
+    const totalHeight = contentHeight + exportPadding * 2
+    //app.value.renderer.resize(totalWidth, totalHeight)
+    app.value.screen.width = totalWidth
+    app.value.screen.height = totalHeight
+
+    // Draw white background with padding
+    const bg = new Graphics()
+    bg.fill({ color: 0xffffff, alpha: 1 })
+    bg.rect(0, 0, totalWidth, totalHeight)
+    bg.endFill()
+    container.addChild(bg)
+
+    matrixContainer.x = exportPadding
+    matrixContainer.y = exportPadding
+    container.addChild(matrixContainer)
+
+    app.value.stage.addChild(container)
     setupDragHandling(cellSize, padding)
+    resizePixi()
   } catch (error) {
     console.error('Error creating matrix visualization:', error)
   }
@@ -994,4 +1053,3 @@ onUnmounted(() => {
   border: #222 solid 0.5px;
 }
 </style>
-

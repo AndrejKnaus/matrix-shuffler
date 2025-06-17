@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import PixiVisualization from './PixiVisualization.vue'
 import { useDatasetStore, type MatrixData } from '@/stores/dataset'
 import { useVisualizationStore } from '@/stores/visualization'
@@ -32,11 +32,17 @@ const matrixData = computed<MatrixData | undefined>(() => {
   }
   return undefined
 })
+
+const pixiVisualizationRef = ref()
+defineExpose({
+  exportCanvasAsPNG: () => pixiVisualizationRef.value?.exportCanvasAsPNG?.(),
+})
 </script>
 
 <template>
   <div class="pixi-matrix-outer">
     <PixiVisualization
+      ref="pixiVisualizationRef"
       v-if="matrixData"
       :cellSize="visualizationStore.config.matrixCellDimension"
       :padding="visualizationStore.config.matrixCellSpacing"
