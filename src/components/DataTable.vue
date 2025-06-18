@@ -5,11 +5,11 @@
       <div class="data-table-controls">
         <div class="button-group">
           <button @click="loadSampleData" class="btn-primary">Load Sample Data</button>
-          <button @click="clearData" class="btn-secondary">Clear</button> 
+          <button @click="clearData" class="btn-secondary">Clear</button>
         </div>
         <span class="data-status">{{ getDataStatus }}</span>
-          <!-- Recently Loaded Datasets -->
-       <div v-if="recentDatasets.length" class="recent-datasets">
+        <!-- Recently Loaded Datasets -->
+        <div v-if="recentDatasets.length" class="recent-datasets">
           <h4 class="recent-title">Recently Loaded:</h4>
           <div class="recent-list">
             <button
@@ -18,7 +18,7 @@
               @click="loadFromCSV(ds.data, ds.name)"
               class="recent-btn"
             >
-               {{ ds.name }}
+              {{ ds.name }}
             </button>
           </div>
         </div>
@@ -32,13 +32,13 @@
         v-else
         ref="hotTableRef"
         :key="tableKey"
-        :data="plainTableData"
-        :colHeaders="true"
-        :rowHeaders="true"
+        :data="hotTableData"
+        :colHeaders="colHeaderRenderer"
+        :rowHeaders="rowHeaderRenderer"
         :width="'100%'"
-        :height="350"
+        :height="'100%'"
         :licenseKey="'non-commercial-and-evaluation'"
-        :readOnly="false"
+        :readOnly="true"
         :manualColumnResize="true"
         :manualRowResize="true"
         :contextMenu="true"
@@ -65,20 +65,18 @@ const recentDatasets = ref<RecentDataset[]>([])
 const loadRecentDatasets = () => {
   const saved = localStorage.getItem('recentDatasets')
   recentDatasets.value = saved ? JSON.parse(saved) : []
-  
 }
 
 const saveRecentDataset = (name: string, data: TableData) => {
   const newEntry = { name, data }
 
   // Remove existing entry with same name
-  const filtered = recentDatasets.value.filter(d => d.name !== name)
+  const filtered = recentDatasets.value.filter((d) => d.name !== name)
   const updated = [newEntry, ...filtered].slice(0, 5) // max 5
 
   recentDatasets.value = updated
   localStorage.setItem('recentDatasets', JSON.stringify(updated))
 }
-
 
 type CellValue = string | number | null
 type TableData = CellValue[][]
@@ -89,7 +87,7 @@ const tableData = ref<TableData>([
   ['', '', '', '', ''],
   ['', '', '', '', ''],
   ['', '', '', '', ''],
-  ['', '', '', '', '']
+  ['', '', '', '', ''],
 ])
 const hotTableRef = ref()
 const tableContainer = ref()
@@ -106,9 +104,27 @@ const plainTableData = computed(() => {
   return JSON.parse(JSON.stringify(tableData.value))
 })
 
+// Extract column headers (skip the first cell)
+const colHeaders = computed(() => {
+  if (tableData.value.length === 0) return []
+  return tableData.value[0].slice(1)
+})
+
+// Extract row headers (skip the first row, get first cell of each row)
+const rowHeaders = computed(() => {
+  if (tableData.value.length <= 1) return []
+  return tableData.value.slice(1).map((row) => row[0])
+})
+
+// Data for HotTable (remove header row and column)
+const hotTableData = computed(() => {
+  if (tableData.value.length <= 1) return []
+  return tableData.value.slice(1).map((row) => row.slice(1))
+})
+
 const hasRealData = computed(() => {
-  return tableData.value.some(row =>
-    row.some(cell => cell !== null && cell !== undefined && cell !== '')
+  return tableData.value.some((row) =>
+    row.some((cell) => cell !== null && cell !== undefined && cell !== ''),
   )
 })
 
@@ -121,6 +137,18 @@ const getDataStatus = computed(() => {
   const cols = Math.max(0, (tableData.value[0]?.length || 0) - 1) // subtract label column
   return `${rows} rows × ${cols} columns`
 })
+
+// Custom renderer for column headers to wrap and show tooltip
+const colHeaderRenderer = (col: number) => {
+  const label = colHeaders.value[col] || ''
+  return `<span class="hot-col-header" title="${label}">${label}</span>`
+}
+
+// Custom renderer for row headers to wrap and show tooltip
+const rowHeaderRenderer = (row: number) => {
+  const label = rowHeaders.value[row] || ''
+  return `<span class=\"hot-row-header\" title=\"${label}\">${label}</span>`
+}
 
 const updateDatasetStore = (data: TableData, preserveNormalization: boolean = false) => {
   if (data.length === 0 || !hasRealData.value) {
@@ -182,7 +210,7 @@ const loadSampleData = () => {
     ['Item C', 0.9, 0.1, 0.8, 0.3],
     ['Item D', 0.4, 0.9, 0.2, 0.7],
     ['Item E', 0.6, 0.5, 0.9, 0.1],
-    ['Item F', 0.3, 0.8, 0.5, 0.4]
+    ['Item F', 0.3, 0.8, 0.5, 0.4],
   ]
 
   tableKey.value++
@@ -198,7 +226,7 @@ const clearData = () => {
     ['', '', '', '', ''],
     ['', '', '', '', ''],
     ['', '', '', '', ''],
-    ['', '', '', '', '']
+    ['', '', '', '', ''],
   ]
 
   tableKey.value++
@@ -207,7 +235,7 @@ const clearData = () => {
 }
 
 const loadFromCSV = (csvData: TableData, name = 'Imported CSV') => {
-  console.log('loadFromCSV:', name) 
+  console.log('loadFromCSV:', name)
   tableData.value = csvData
   tableKey.value++
   updateDatasetStore(csvData)
@@ -238,7 +266,7 @@ const transposeData = () => {
 
 defineExpose({
   loadFromCSV,
-  transposeData
+  transposeData,
 })
 
 const onDataChange = (changes: unknown) => {
@@ -255,7 +283,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-
 .recent-datasets {
   margin-top: 12px;
 }
@@ -358,7 +385,8 @@ onMounted(() => {
   }
 }
 
-.btn-primary, .btn-secondary {
+.btn-primary,
+.btn-secondary {
   padding: 6px 10px;
   border: 1px solid;
   border-radius: 4px;
@@ -375,7 +403,8 @@ onMounted(() => {
 }
 
 @media (min-width: 540px) {
-  .btn-primary, .btn-secondary {
+  .btn-primary,
+  .btn-secondary {
     padding: 7px 12px;
     font-size: 13px;
     height: 34px;
@@ -383,7 +412,8 @@ onMounted(() => {
 }
 
 @media (min-width: 768px) {
-  .btn-primary, .btn-secondary {
+  .btn-primary,
+  .btn-secondary {
     padding: 8px 16px;
     font-size: 14px;
     height: 36px;
@@ -451,5 +481,41 @@ onMounted(() => {
   background: #f5f5f5 !important;
   font-weight: bold !important;
   text-align: center !important;
+}
+
+:deep(.handsontable th .hot-col-header) {
+  display: block;
+  white-space: normal;
+  word-break: break-word;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
+.hot-col-header {
+  display: inline-block;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:deep(.handsontable th .hot-row-header) {
+  display: block;
+  white-space: normal;
+  word-break: break-word;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
+.hot-row-header {
+  display: inline-block;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>
