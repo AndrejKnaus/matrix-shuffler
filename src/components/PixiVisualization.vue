@@ -79,11 +79,13 @@ const dragState = ref<DragState>({
 })
 
 const exportCanvasAsPNG = (filename: string = 'matrix-shuffler.png') => {
-  console.log('Exporting canvas as PNG...')
   if (!app.value) return
-  const canvas = app.value.renderer.extract.canvas(app.value.stage)
-  const base64 = canvas.toDataURL('image/png')
-  // Create a download link
+  const extracted = app.value.renderer.extract.canvas(app.value.stage as Container)
+  if (!(extracted instanceof HTMLCanvasElement)) {
+    console.error('Extracted object is not a canvas element')
+    return
+  }
+  const base64 = extracted.toDataURL('image/png')
   const link = document.createElement('a')
   link.href = base64
   link.download = filename

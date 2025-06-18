@@ -9,7 +9,7 @@ import { useVisualizationStore } from './stores/visualization'
 
 import { useFileUpload } from '@/utils/utils'
 
-const showImportModal = ref(false) // New ref for modal visibility
+const showImportModal = ref(false)
 
 const visualizationStore = useVisualizationStore()
 
@@ -49,6 +49,9 @@ const handleCSVImport = (event: Event) => {
   const target = event.target as HTMLInputElement
   const file = target.files?.[0]
 
+  // Ensure DataTable panel is shown so ref is available
+  showDataTablePanel.value = true
+
   if (file) {
     const reader = new FileReader()
     reader.onload = (e) => {
@@ -66,7 +69,6 @@ const handleCSVImport = (event: Event) => {
           })
         })
 
-        // Load data into the table
         if (dataTableRef.value && data.length > 0) {
           const displayName = file.name?.replace(/\.[^/.]+$/, '') || 'Imported CSV'
           importedDisplayName.value = displayName
@@ -403,9 +405,9 @@ const stopResizeDataTablePanel = () => {
 }
 
 .modal-actions button:last-child {
-  background-color: #4caf50; /* Example primary action color */
+  background-color: var(--color-primary-light); /* Example primary action color */
   color: white;
-  border: 1px solid #4caf50;
+  border: 1px solid var(--color-primary);
 }
 
 /* Removed - now defined below in main-content section */
