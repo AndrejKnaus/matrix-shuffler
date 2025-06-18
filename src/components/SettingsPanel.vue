@@ -125,8 +125,9 @@
             <button @click="datasetStore.shuffleRows()" class="sort-btn">Shuffle Rows</button>
             <button @click="datasetStore.shuffleColumns()" class="sort-btn">Shuffle Cols</button>
             <button @click="datasetStore.applySeriation()" class="sort-btn-accent">
-              ✨ Seriation
+              Seriation
             </button>
+            <button @click="datasetStore.twoDimSort()" class="sort-btn-accent">2D Sort</button>
           </div>
         </div>
 

@@ -145,7 +145,7 @@ export const useDatasetStore = defineStore('dataset', {
     calculateStatistic(values: number[], method: SortMethod): number {
       if (method === 'alphabetical') return 0 // Not applicable for numeric calculation
 
-      const validValues = values.filter(v => !isNaN(v) && isFinite(v))
+      const validValues = values.filter((v) => !isNaN(v) && isFinite(v))
       if (validValues.length === 0) return 0
 
       switch (method) {
@@ -156,16 +156,16 @@ export const useDatasetStore = defineStore('dataset', {
         case 'median':
           const sorted = [...validValues].sort((a, b) => a - b)
           const mid = Math.floor(sorted.length / 2)
-          return sorted.length % 2 === 0
-            ? (sorted[mid - 1] + sorted[mid]) / 2
-            : sorted[mid]
+          return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid]
         case 'max':
           return Math.max(...validValues)
         case 'min':
           return Math.min(...validValues)
         case 'variance':
           const mean = validValues.reduce((a, b) => a + b, 0) / validValues.length
-          return validValues.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / validValues.length
+          return (
+            validValues.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / validValues.length
+          )
         default:
           return 0
       }
@@ -188,9 +188,9 @@ export const useDatasetStore = defineStore('dataset', {
         this.rowOrder = sortedIndices
       } else {
         // Sort by statistical method
-        const rowStats = this.rowOrder.map(rowIdx => ({
+        const rowStats = this.rowOrder.map((rowIdx) => ({
           index: rowIdx,
-          stat: this.calculateStatistic(data[rowIdx], method)
+          stat: this.calculateStatistic(data[rowIdx], method),
         }))
 
         rowStats.sort((a, b) => {
@@ -198,7 +198,7 @@ export const useDatasetStore = defineStore('dataset', {
           return direction === 'asc' ? comparison : -comparison
         })
 
-        this.rowOrder = rowStats.map(item => item.index)
+        this.rowOrder = rowStats.map((item) => item.index)
       }
     },
 
@@ -219,11 +219,11 @@ export const useDatasetStore = defineStore('dataset', {
         this.columnOrder = sortedIndices
       } else {
         // Sort by statistical method
-        const colStats = this.columnOrder.map(colIdx => {
-          const columnValues = data.map(row => row[colIdx])
+        const colStats = this.columnOrder.map((colIdx) => {
+          const columnValues = data.map((row) => row[colIdx])
           return {
             index: colIdx,
-            stat: this.calculateStatistic(columnValues, method)
+            stat: this.calculateStatistic(columnValues, method),
           }
         })
 
@@ -232,7 +232,7 @@ export const useDatasetStore = defineStore('dataset', {
           return direction === 'asc' ? comparison : -comparison
         })
 
-        this.columnOrder = colStats.map(item => item.index)
+        this.columnOrder = colStats.map((item) => item.index)
       }
     },
 
@@ -300,8 +300,8 @@ export const useDatasetStore = defineStore('dataset', {
           if (i === j) {
             colSimilarities[i][j] = 1
           } else {
-            const colA = data.map(row => row[i])
-            const colB = data.map(row => row[j])
+            const colA = data.map((row) => row[i])
+            const colB = data.map((row) => row[j])
             colSimilarities[i][j] = this.calculateCorrelation(colA, colB)
           }
         }
@@ -397,9 +397,10 @@ export const useDatasetStore = defineStore('dataset', {
       const data = this.normalizedData.length > 0 ? this.normalizedData : this.initialData
       const targetRow = data[targetRowIndex]
 
-      const rowSimilarities = this.rowOrder.map(rowIdx => ({
+      const rowSimilarities = this.rowOrder.map((rowIdx) => ({
         index: rowIdx,
-        similarity: rowIdx === targetRowIndex ? 1 : this.calculateCorrelation(data[rowIdx], targetRow)
+        similarity:
+          rowIdx === targetRowIndex ? 1 : this.calculateCorrelation(data[rowIdx], targetRow),
       }))
 
       rowSimilarities.sort((a, b) => {
@@ -407,21 +408,22 @@ export const useDatasetStore = defineStore('dataset', {
         return direction === 'asc' ? comparison : -comparison
       })
 
-      this.rowOrder = rowSimilarities.map(item => item.index)
+      this.rowOrder = rowSimilarities.map((item) => item.index)
     },
 
     // Sort columns by similarity to a specific column
     sortColumnsBySimilarity(targetColIndex: number, direction: SortDirection = 'desc') {
-      if (!this.hasData || targetColIndex < 0 || targetColIndex >= this.initialData[0]?.length) return
+      if (!this.hasData || targetColIndex < 0 || targetColIndex >= this.initialData[0]?.length)
+        return
 
       const data = this.normalizedData.length > 0 ? this.normalizedData : this.initialData
-      const targetCol = data.map(row => row[targetColIndex])
+      const targetCol = data.map((row) => row[targetColIndex])
 
-      const colSimilarities = this.columnOrder.map(colIdx => {
-        const col = data.map(row => row[colIdx])
+      const colSimilarities = this.columnOrder.map((colIdx) => {
+        const col = data.map((row) => row[colIdx])
         return {
           index: colIdx,
-          similarity: colIdx === targetColIndex ? 1 : this.calculateCorrelation(col, targetCol)
+          similarity: colIdx === targetColIndex ? 1 : this.calculateCorrelation(col, targetCol),
         }
       })
 
@@ -430,7 +432,102 @@ export const useDatasetStore = defineStore('dataset', {
         return direction === 'asc' ? comparison : -comparison
       })
 
-      this.columnOrder = colSimilarities.map(item => item.index)
+      this.columnOrder = colSimilarities.map((item) => item.index)
+    },
+
+    // 2D Sort (TwoDimSort) algorithm
+    twoDimSort() {
+      if (!this.hasData || this.initialData.length === 0) return
+      // Work on a copy of the current order
+      let rowOrder = [...this.rowOrder]
+      let columnOrder = [...this.columnOrder]
+      const data = this.normalizedData.length > 0 ? this.normalizedData : this.initialData
+      let finish = false
+      let runtimes = 0
+      const maxRuns = 500
+      let prevRowOrder: number[] = []
+      let prevColOrder: number[] = []
+      // Helper: deep compare arrays
+      const arraysEqual = (a: number[], b: number[]) =>
+        a.length === b.length && a.every((v, i) => v === b[i])
+      while (!finish) {
+        runtimes++
+        // Sort by row weights
+        const rowWeights = calculateRowWeights(data, rowOrder, columnOrder)
+        for (let i = 0; i < rowOrder.length - 1; i++) {
+          if (rowWeights[i] > rowWeights[i + 1]) {
+            const tmpWeight = rowWeights[i]
+            rowWeights[i] = rowWeights[i + 1]
+            rowWeights[i + 1] = tmpWeight
+            const tmpOrder = rowOrder[i]
+            rowOrder[i] = rowOrder[i + 1]
+            rowOrder[i + 1] = tmpOrder
+          }
+        }
+        // Sort by column weights
+        const colWeights = calculateColWeights(data, rowOrder, columnOrder)
+        for (let i = 0; i < columnOrder.length - 1; i++) {
+          if (colWeights[i] > colWeights[i + 1]) {
+            const tmpWeight = colWeights[i]
+            colWeights[i] = colWeights[i + 1]
+            colWeights[i + 1] = tmpWeight
+            const tmpOrder = columnOrder[i]
+            columnOrder[i] = columnOrder[i + 1]
+            columnOrder[i + 1] = tmpOrder
+          }
+        }
+        // Check for convergence
+        if (arraysEqual(rowOrder, prevRowOrder) && arraysEqual(columnOrder, prevColOrder)) {
+          finish = true
+        } else {
+          prevRowOrder = [...rowOrder]
+          prevColOrder = [...columnOrder]
+        }
+        if (runtimes >= maxRuns) finish = true
+      }
+      this.rowOrder = rowOrder
+      this.columnOrder = columnOrder
+      // --- Helper functions ---
+      function calculateColWeights(
+        matrix: number[][],
+        rowOrder: number[],
+        columnOrder: number[],
+      ): number[] {
+        // Normalize each row to sum to 1
+        const normMatrix: number[][] = rowOrder.map((rowIdx) => {
+          const row = columnOrder.map((colIdx) => matrix[rowIdx][colIdx])
+          const sum = row.reduce((a, b) => a + b, 0)
+          return sum === 0 ? row.map(() => 0) : row.map((v) => v / sum)
+        })
+        // Column weights: sum of each column
+        const colWeights = columnOrder.map((_, j) =>
+          normMatrix.reduce((sum, row) => sum + row[j], 0),
+        )
+        return colWeights
+      }
+      function calculateRowWeights(
+        matrix: number[][],
+        rowOrder: number[],
+        columnOrder: number[],
+      ): number[] {
+        // Normalize each column to sum to 1
+        const normMatrix: number[][] = rowOrder.map((rowIdx) =>
+          columnOrder.map((colIdx) => matrix[rowIdx][colIdx]),
+        )
+        const numRows = normMatrix.length
+        const numCols = normMatrix[0]?.length || 0
+        // For each column, normalize
+        for (let j = 0; j < numCols; j++) {
+          let colSum = 0
+          for (let i = 0; i < numRows; i++) colSum += normMatrix[i][j]
+          if (colSum !== 0) {
+            for (let i = 0; i < numRows; i++) normMatrix[i][j] /= colSum
+          }
+        }
+        // Row weights: sum of each row
+        const rowWeights = normMatrix.map((row) => row.reduce((a, b) => a + b, 0))
+        return rowWeights
+      }
     },
   },
   getters: {
