@@ -4,7 +4,6 @@ import { ref } from 'vue'
 import PixiVisualizationWrapper from './components/PixiVisualizationWrapper.vue'
 import DataTable from './components/DataTable.vue'
 import SettingsPanel from './components/SettingsPanel.vue'
-import ResizableDrawer from './components/ResizableDrawer.vue'
 
 import { useVisualizationStore } from './stores/visualization'
 
@@ -79,6 +78,41 @@ const handleCSVImport = (event: Event) => {
   }
   closeImportModal()
 }
+
+const showSettingsPanel = ref(false)
+const toggleSettingsPanel = () => {
+  showSettingsPanel.value = !showSettingsPanel.value
+}
+
+const showDataTablePanel = ref(false)
+const toggleDataTablePanel = () => {
+  showDataTablePanel.value = !showDataTablePanel.value
+}
+
+const dataTablePanelWidth = ref(340)
+const minDataTablePanelWidth = 220
+const maxDataTablePanelWidth = 1200
+let isResizingDataTablePanel = false
+
+const startResizeDataTablePanel = (e: MouseEvent) => {
+  isResizingDataTablePanel = true
+  document.body.style.cursor = 'ew-resize'
+  window.addEventListener('mousemove', resizeDataTablePanel)
+  window.addEventListener('mouseup', stopResizeDataTablePanel)
+}
+
+const resizeDataTablePanel = (e: MouseEvent) => {
+  if (!isResizingDataTablePanel) return
+  const newWidth = Math.min(maxDataTablePanelWidth, Math.max(minDataTablePanelWidth, e.clientX))
+  dataTablePanelWidth.value = newWidth
+}
+
+const stopResizeDataTablePanel = () => {
+  isResizingDataTablePanel = false
+  document.body.style.cursor = ''
+  window.removeEventListener('mousemove', resizeDataTablePanel)
+  window.removeEventListener('mouseup', stopResizeDataTablePanel)
+}
 </script>
 
 <template>
@@ -133,33 +167,59 @@ const handleCSVImport = (event: Event) => {
     </header>
 
     <main class="content-area">
-      <!--<img alt="Vue logo" class="logo" src="@/assets/logo.svg" width="125" height="125" />-->
-
       <div class="wrapper">
-        <!--<Introduction msg="Welcome to Matrix Shuffler!" />-->
-
-        <!--
-        <nav>
-          <RouterLink to="/">Home</RouterLink>
-          <RouterLink to="/about">About</RouterLink>
-        </nav>
-        -->
-        <!-- Main Content Area -->
         <div class="main-content">
           <!-- Data Table Panel -->
-          <ResizableDrawer>
-            <DataTable ref="dataTableRef" @dataChanged="handleDataChange" />
-          </ResizableDrawer>
-
+          <div>
+            <button
+              class="data-toggle-btn"
+              @click="toggleDataTablePanel"
+              :aria-expanded="showDataTablePanel"
+              :class="{ 'panel-open': showDataTablePanel }"
+              :style="showDataTablePanel ? `left: ${dataTablePanelWidth}px;` : 'left: 0;'"
+            >
+              🗂️
+            </button>
+            <transition name="slide-side-panel">
+              <div
+                v-if="showDataTablePanel"
+                class="side-panel-data"
+                :style="`width: ${dataTablePanelWidth}px;`"
+              >
+                <DataTable ref="dataTableRef" @dataChanged="handleDataChange" />
+                <div
+                  class="resize-handle"
+                  @mousedown="startResizeDataTablePanel"
+                  title="Resize panel"
+                ></div>
+              </div>
+            </transition>
+          </div>
           <!-- PixiJS Visualization View -->
+
           <div class="visualization-view">
             <PixiVisualizationWrapper ref="pixiVisRef" :useRandomData="false" />
           </div>
         </div>
+
+        <button
+          class="settings-toggle-btn"
+          @click="toggleSettingsPanel"
+          :aria-expanded="showSettingsPanel"
+          :class="{ 'panel-open': showSettingsPanel }"
+          :style="showSettingsPanel ? 'right: 360px;' : 'right: 0;'"
+        >
+          ⚙️
+        </button>
+        <transition name="slide-side-panel">
+          <div v-if="showSettingsPanel" class="side-panel">
+            <SettingsPanel />
+          </div>
+        </transition>
       </div>
     </main>
 
-    <SettingsPanel />
+    <SettingsPanel v-if="showSettingsPanel" />
 
     <div v-if="showImportModal" class="modal-overlay" @click.self="closeImportModal">
       <div class="modal-content">
@@ -214,7 +274,7 @@ const handleCSVImport = (event: Event) => {
   position: fixed;
   top: 0;
   left: 0;
-  z-index: 1000;
+  z-index: 1600;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
@@ -252,7 +312,7 @@ const handleCSVImport = (event: Event) => {
   background-color: var(--color-background-soft);
   min-width: 160px;
   box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
-  z-index: 1;
+  z-index: 1400;
 }
 
 /* Links inside the dropdown */
@@ -362,7 +422,6 @@ const handleCSVImport = (event: Event) => {
 .main-content {
   display: flex;
   height: 100%;
-  gap: 8px;
   padding: 8px;
   min-height: 0;
   overflow: hidden;
@@ -382,7 +441,6 @@ const handleCSVImport = (event: Event) => {
 @media (min-width: 768px) {
   .main-content {
     flex-direction: row;
-    gap: 16px;
     padding: 16px;
   }
 
@@ -416,5 +474,117 @@ const handleCSVImport = (event: Event) => {
   flex-direction: column;
   overflow: hidden;
   box-sizing: border-box;
+}
+
+.settings-toggle-btn {
+  position: fixed;
+  top: 80px;
+  right: 0;
+  z-index: 1200;
+  background: var(--color-primary-light);
+  color: white;
+  border: none;
+  border-radius: 8px 0 0 8px;
+  padding: 12px 16px;
+  font-size: 22px;
+  cursor: pointer;
+  box-shadow: -2px 2px 8px rgba(0, 0, 0, 0.08);
+  transition: background 0.2s;
+}
+
+.settings-toggle-btn.panel-open {
+  right: 340px;
+}
+
+.data-toggle-btn {
+  position: fixed;
+  top: 80px;
+  left: 0;
+  z-index: 1200;
+  background: var(--color-primary-light);
+  color: white;
+  border: none;
+  border-radius: 0 8px 8px 0;
+  padding: 12px 16px;
+  font-size: 22px;
+  cursor: pointer;
+  box-shadow: -2px 2px 8px rgba(0, 0, 0, 0.08);
+  transition: background 0.2s;
+}
+
+.data-toggle-btn.panel-open {
+  left: 340px;
+}
+
+.data-toggle-btn[aria-expanded='true'] {
+  background: var(--color-primary);
+}
+
+.side-panel {
+  position: fixed;
+  top: 52px;
+  right: 0;
+  width: 340px;
+  height: calc(100vh - 52px);
+  background: white;
+  border-left: 1px solid var(--color-border);
+  box-shadow: -2px 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 1300;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+.side-panel-data {
+  position: fixed;
+  top: 52px;
+  left: 0;
+  /* width is now dynamic via inline style */
+  height: calc(100vh - 52px);
+  background: white;
+  border-right: 1px solid var(--color-border);
+  box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 1300;
+  display: flex;
+  flex-direction: column;
+}
+
+.close-side-panel {
+  position: absolute;
+  top: 10px;
+  left: 50px;
+  background: none;
+  border: none;
+  font-size: 2rem;
+  color: #333;
+  cursor: pointer;
+  z-index: 1400;
+}
+
+.slide-side-panel-enter-from,
+.slide-side-panel-leave-to {
+  transform: translateX(100%);
+  opacity: 0;
+}
+
+.slide-side-panel-enter-to,
+.slide-side-panel-leave-from {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.resize-handle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 7px;
+  height: 100%;
+  cursor: ew-resize;
+  background: transparent;
+  z-index: 1400;
+  transition: background 0.2s;
+}
+.resize-handle:hover {
+  background: rgba(0, 0, 0, 0.07);
 }
 </style>

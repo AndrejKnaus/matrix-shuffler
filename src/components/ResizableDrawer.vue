@@ -1,7 +1,8 @@
 <template>
   <div class="resizable-drawer" :style="{ width: width + 'px' }" ref="drawer">
-    <slot />
+    <slot name="panel" />
     <div class="resizer" @mousedown="startResize"></div>
+    <slot name="side" />
   </div>
 </template>
 
@@ -21,7 +22,7 @@ const startResize = (e: MouseEvent) => {
 
 const handleMouseMove = (e: MouseEvent) => {
   if (!isResizing.value) return
-  width.value = Math.min(Math.max(e.clientX, 200), 600)
+  width.value = Math.min(Math.max(e.clientX, 50), 800)
 }
 
 const stopResize = () => {
@@ -43,8 +44,8 @@ onUnmounted(() => {
   flex-direction: column;
   background: #f0f0f0;
   position: relative;
-  min-width: 200px;
-  max-width: 600px;
+  min-width: 10px;
+  max-width: 800px;
   flex-shrink: 0;
   overflow: hidden;
   border-right: 1px solid #ccc;

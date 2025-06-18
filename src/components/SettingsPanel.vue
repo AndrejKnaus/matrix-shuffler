@@ -1,10 +1,7 @@
 <template>
-  <div class="settings-panel" :class="{ 'panel-open': isOpen }">
+  <div class="settings-panel">
     <div class="panel-header">
       <h3>Settings</h3>
-      <button @click="togglePanel" class="toggle-btn">
-        {{ isOpen ? '×' : '⚙️' }}
-      </button>
     </div>
 
     <div class="panel-content" v-show="isOpen">
@@ -213,7 +210,7 @@ import { useDatasetStore, type SortMethod, type SortDirection } from '@/stores/d
 
 const visualizationStore = useVisualizationStore()
 const datasetStore = useDatasetStore()
-const isOpen = ref(false)
+const isOpen = ref(true)
 
 // Sorting state
 const selectedMethod = ref<SortMethod>('sum')
@@ -234,14 +231,6 @@ const colorSchemes = {
   reds: { minColor: '#fde8e8', maxColor: '#f59e9e' },
   greens: { minColor: '#e6f9ed', maxColor: '#7ed6a2' },
   viridis: { minColor: '#e0e7f3', maxColor: '#b5e3b5' },
-}
-
-const togglePanel = () => {
-  isOpen.value = !isOpen.value
-
-  if (isOpen.value) {
-    window.dispatchEvent(new CustomEvent('closePanels', { detail: { except: 'settings' } }))
-  }
 }
 
 const applySettings = () => {
@@ -306,13 +295,13 @@ onMounted(() => {
   margin-bottom: 12px;
   padding-bottom: 6px;
   border-bottom: 1px solid var(--color-border);
-  margin-top: 32px;
 }
 .settings-panel {
   position: fixed;
-  top: 60px;
+  top: 52px;
   right: 0;
-  width: 300px;
+  width: 360px;
+  height: calc(100vh - 52px);
   background: white;
   border: 1px solid var(--color-border);
   border-radius: 8px 0 0 8px;
@@ -340,8 +329,8 @@ onMounted(() => {
 }
 
 .toggle-btn {
-  background: var(--color-primary);
-  border: 1px solid var(--color-primary);
+  background: var(--color-primary-light);
+  border: 1px solid var(--color-primary-light);
   border-radius: 50%;
   font-size: 16px;
   cursor: pointer;
@@ -358,8 +347,8 @@ onMounted(() => {
 }
 
 .toggle-btn:hover {
-  background: var(--color-primary-dark);
-  border-color: var(--color-primary-dark);
+  background: var(--color-primary);
+  border-color: var(--color-primary);
 }
 
 .panel-content {
@@ -437,7 +426,7 @@ onMounted(() => {
   border: 1px solid var(--color-border);
   border-radius: 4px;
   background: white;
-  color: var(--color-text);
+  color: var(--color-primary-light);
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -447,16 +436,16 @@ onMounted(() => {
 }
 
 .color-scheme-btn.active {
-  background: var(--color-primary);
+  background: var(--color-primary-light);
   color: white;
-  border-color: var(--color-primary);
+  border-color: var(--color-primary-light);
 }
 
 .btn-reset {
   width: 100%;
   padding: 10px;
-  background: var(--color-accent);
-  color: var(--color-text);
+  background: var(--color-primary-light);
+  color: white;
   border: 1px solid var(--color-border);
   border-radius: 4px;
   cursor: pointer;
@@ -464,7 +453,7 @@ onMounted(() => {
 }
 
 .btn-reset:hover {
-  background: var(--color-border);
+  background: var(--color-primary);
 }
 
 .sort-subsection {
@@ -540,13 +529,13 @@ onMounted(() => {
 }
 
 .sort-btn-accent {
-  background: var(--color-accent);
+  background: var(--color-primary-light);
   color: white;
-  border-color: var(--color-accent);
+  border-color: var(--color-primary-light);
 }
 
 .sort-btn-accent:hover {
-  background: var(--color-accent-dark);
+  background: var(--color-primary);
 }
 
 .sort-btn.full-width {

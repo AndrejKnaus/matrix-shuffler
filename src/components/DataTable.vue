@@ -421,14 +421,14 @@ onMounted(() => {
 }
 
 .btn-primary {
-  background: var(--color-primary);
+  background: var(--color-primary-light);
   color: white;
-  border-color: var(--color-primary);
+  border-color: var(--color-primary-light);
 }
 
 .btn-primary:hover {
-  background: var(--color-primary-dark);
-  border-color: var(--color-primary-dark);
+  background: var(--color-primary);
+  border-color: var(--color-primary);
 }
 
 .btn-secondary {

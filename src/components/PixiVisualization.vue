@@ -739,7 +739,7 @@ const centerContainer = (container: Container) => {
 
   // For large datasets, use a minimum scale to ensure visibility
   const minScale = 0.1 // Don't scale smaller than 10%
-  const scale = Math.max(minScale, Math.min(scaleX, scaleY, 1)) // Don't scale up, only down
+  const scale = 1 //Math.max(minScale, Math.min(scaleX, scaleY, 1)) // Don't scale up, only down
 
   container.scale.set(scale)
 
