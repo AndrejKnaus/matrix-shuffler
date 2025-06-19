@@ -6,7 +6,6 @@ import {
   Graphics,
   BitmapText,
   FederatedPointerEvent,
-  Rectangle,
 } from 'pixi.js'
 import { useVisualizationStore } from '../stores/visualization'
 import { type MatrixCell, type MatrixData } from '@/stores/dataset'
@@ -382,11 +381,6 @@ const handleColumnDrag = (dx: number, cellSize: number, padding: number) => {
       removedCell.colIndex = currentColIndex
     }
 
-    for (let r = 0; r < rowSize.value; r++) {
-      const removedData = props.matrixData.values[r].splice(dragState.value.originalColIndex, 1)[0]
-      props.matrixData.values[r].splice(currentColIndex, 0, removedData)
-    }
-
     const removedLabel = columnLabelObjects.value.splice(dragState.value.originalColIndex, 1)[0]
     columnLabelObjects.value.splice(currentColIndex, 0, removedLabel)
     for (let col = 0; col < columnLabelObjects.value.length; col++) {
@@ -413,7 +407,6 @@ const renderMatrix = (cellSize: number, padding: number, container: Container) =
   container.eventMode = 'static'
   container.hitArea = app.value?.screen
 
-  // Pre-calculate min/max for auto-normalization if needed
   const allValues = props.matrixData.values
     .flat()
     .map((cell) => cell.initialValue)
@@ -426,14 +419,12 @@ const renderMatrix = (cellSize: number, padding: number, container: Container) =
   let globalMax = Math.max(...allValues)
 
   if (needsAutoNormalization) {
-    // Check for extreme outliers - if the range is too wide, use percentile-based normalization
     const range = globalMax - globalMin
     const sortedValues = [...allValues].sort((a, b) => a - b)
-    const p5 = sortedValues[Math.floor(sortedValues.length * 0.05)] // 5th percentile
-    const p95 = sortedValues[Math.floor(sortedValues.length * 0.95)] // 95th percentile
+    const p5 = sortedValues[Math.floor(sortedValues.length * 0.05)]
+    const p95 = sortedValues[Math.floor(sortedValues.length * 0.95)]
     const percentileRange = p95 - p5
 
-    // If the full range is more than 10x the percentile range, use percentile-based normalization
     if (range > percentileRange * 10) {
       globalMin = p5
       globalMax = p95
@@ -462,8 +453,11 @@ const renderMatrix = (cellSize: number, padding: number, container: Container) =
   rowLabelPadding.value = maxLabelWidth + labelPadding
 
   let maxLabelHeight = 0
-  const columnLabelContainer = new Container()
+    const columnLabelContainer = new Container()
   columnLabelObjects.value = []
+
+  let labelAngleDegrees = visualizationStore.settings.labelRotation
+
   for (let col = 0; col < props.matrixData.columnNames.length; col++) {
     const labelText = props.matrixData.columnNames[col]
     const colLabel = new BitmapText({
@@ -475,9 +469,8 @@ const renderMatrix = (cellSize: number, padding: number, container: Container) =
         fill: '#000000',
       },
     })
-    //colLabel.rotation = -Math.PI / 2 // Rotate the label 90 degrees counter-clockwise
-    const rotationDegrees = visualizationStore.settings.labelRotation
-    colLabel.rotation = -(rotationDegrees * Math.PI) / 180
+      //colLabel.rotation = -Math.PI / 2
+      colLabel.rotation = -(labelAngleDegrees * Math.PI) / 180
     colLabel.x = col * (cellSize + padding) + rowLabelPadding.value + cellSize / 2
     colLabel.y = 0
     colLabel.anchor = { x: 0, y: 0.5 }
@@ -530,21 +523,18 @@ const renderMatrix = (cellSize: number, padding: number, container: Container) =
   }
 }
 
-// Helper function to convert CSS hex color to PIXI color
-const hexToPixiColor = (hex: string): number => {
+ const hexToPixiColor = (hex: string): number => {
   return parseInt(hex.replace('#', ''), 16)
 }
 
-// Helper function to interpolate between min and max colors based on value
+
 const getInterpolatedColor = (value: number): number => {
   try {
-    // Clamp value between 0 and 1
     const clampedValue = Math.max(0, Math.min(1, isNaN(value) ? 0 : value))
 
     const minColor = hexToPixiColor(visualizationStore.settings.minColor)
     const maxColor = hexToPixiColor(visualizationStore.settings.maxColor)
 
-    // Simple linear interpolation - for more complex color spaces, could use a library
     const r1 = (minColor >> 16) & 255
     const g1 = (minColor >> 8) & 255
     const b1 = minColor & 255
@@ -558,8 +548,8 @@ const getInterpolatedColor = (value: number): number => {
     const b = Math.round(b1 + (b2 - b1) * clampedValue)
 
     return (r << 16) | (g << 8) | b
-  } catch (error) {
-    return 0x1e40af // Default blue color
+  } catch {
+    return 0x1e40af
   }
 }
 
@@ -588,8 +578,6 @@ const createCell = (
         ? value.normalizedValue
         : initialValue
 
-    // If no normalization was applied (normalizedValue equals initialValue),
-    // we need to normalize for display purposes using pre-calculated global min/max
     if (value.normalizedValue === undefined && needsAutoNormalization) {
       if (globalMax !== globalMin) {
         // Clamp values to the normalization range to handle outliers
@@ -646,7 +634,7 @@ const createCircleCell = (
   normalizedValue: number,
 ) => {
   const borderColor = getInterpolatedColor(normalizedValue)
-  rect.setStrokeStyle({ width: 1, color: borderColor, alignment: 0.5 }) // Align stroke to pixel boundaries
+  rect.setStrokeStyle({ width: 1, color: borderColor, alignment: 0.5 }) 
   rect.fill({ color: 0xfff, alpha: 0 })
   rect.rect(0, 0, cellSize, cellSize)
   rect.endFill()
@@ -732,20 +720,10 @@ const centerContainer = (container: Container) => {
     return
   }
 
-  // Calculate scale to fit the content within the viewport
-  const availableWidth = app.value.screen.width * 0.9 // Leave 10% margin
-  const availableHeight = app.value.screen.height * 0.9 // Leave 10% margin
-
-  const scaleX = container.width > 0 ? availableWidth / container.width : 1
-  const scaleY = container.height > 0 ? availableHeight / container.height : 1
-
-  // For large datasets, use a minimum scale to ensure visibility
-  const minScale = 0.1 // Don't scale smaller than 10%
-  const scale = 1 //Math.max(minScale, Math.min(scaleX, scaleY, 1)) // Don't scale up, only down
+  const scale = 1
 
   container.scale.set(scale)
 
-  // Center after scaling
   const scaledWidth = container.width * scale
   const scaledHeight = container.height * scale
 
@@ -753,7 +731,6 @@ const centerContainer = (container: Container) => {
   container.y = (app.value.screen.height - scaledHeight) / 2
 }
 
-// Matrix visualization creation
 const createMatrixVisualization = () => {
   if (!app.value) {
     return
@@ -766,7 +743,6 @@ const createMatrixVisualization = () => {
   const rows = props.matrixData.rowNames.length
   const cols = props.matrixData.columnNames.length
 
-  // Use configured cell size, fallback to automatic calculation
   let cellSize = visualizationStore.config.matrixCellDimension || props.cellSize
   const padding = visualizationStore.config.matrixCellSpacing || props.padding
 
@@ -780,7 +756,6 @@ const createMatrixVisualization = () => {
     const maxCellSizeByHeight = Math.floor(availableHeight / rows)
     cellSize = Math.min(maxCellSizeByWidth, maxCellSizeByHeight)
 
-    // Minimum cell size for large datasets
     const minCellSize = rows > 20 || cols > 20 ? 6 : 10
     cellSize = Math.max(cellSize, minCellSize)
   }
@@ -845,23 +820,7 @@ const roundTooltipNumber = (value: number | undefined): string => {
   return value !== undefined ? Number(value.toFixed(3)).toString() : '-'
 }
 
-const handlePanStart = (event: KeyboardEvent) => {
-  if (event.key === panModifier && !isPanning.value) {
-    isPanning.value = true
-    if (app.value) {
-      app.value.stage.cursor = 'grab'
-    }
-  }
-}
-
-const handlePanEnd = (event: KeyboardEvent) => {
-  if (event.key === panModifier && isPanning.value) {
-    isPanning.value = false
-    if (app.value) {
-      app.value.stage.cursor = 'default'
-    }
-  }
-}
+// handlePanStart and handlePanEnd functions were removed as they were unused
 
 const handleKeyDown = (e: KeyboardEvent) => {
   if (e.metaKey || e.altKey) {
@@ -891,8 +850,6 @@ const resizePixi = () => {
   const height = containerRef.value.clientHeight || window.innerHeight
 
   app.value.renderer.resize(width, height)
-  app.value.screen.width = width
-  app.value.screen.height = height
 
   if (app.value.stage.children.length > 0) {
     centerContainer(app.value.stage.children[0] as Container)
@@ -1002,6 +959,11 @@ watch(isPanning, (active) => {
 })
 
 onUnmounted(() => {
+  if (resizeTimeout) {
+    clearTimeout(resizeTimeout)
+    resizeTimeout = null
+  }
+
   if (app.value) {
     app.value.destroy(true)
     app.value = null
@@ -1011,6 +973,7 @@ onUnmounted(() => {
   window.removeEventListener('keyup', handleKeyUp)
 })
 </script>
+
 
 <template>
   <div class="pixi-matrix-container">

@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { useFileUpload } from '@/utils/utils'
 
+defineOptions({
+  name: 'IntroductionPanel'
+})
+
 defineProps<{
   msg: string
 }>()

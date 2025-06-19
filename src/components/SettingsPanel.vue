@@ -60,6 +60,14 @@
             @input="applySettings"
           />
         </label>
+        <div class="rotation-controls">
+          <button @click="setOptimalRotation" class="btn-auto" v-if="datasetStore.hasData">
+            Auto (Optimal)
+          </button>
+          <button @click="setRotation(0)" class="btn-preset">0°</button>
+          <button @click="setRotation(45)" class="btn-preset">45°</button>
+          <button @click="setRotation(90)" class="btn-preset">90°</button>
+        </div>
       </div>
 
       <div class="setting-group">
@@ -257,7 +265,7 @@ const resetSettings = () => {
   localSettings.minColor = '#f0f8ff'
   localSettings.maxColor = '#1e40af'
   localSettings.normalization = 'none'
-  localSettings.labelRotation = 90
+  localSettings.labelRotation = 45 // Changed from 90 to match new default
   applySettings()
 }
 
@@ -279,6 +287,18 @@ const sortRowsBySimilarity = () => {
 
 const sortColumnsBySimilarity = () => {
   datasetStore.sortColumnsBySimilarity(selectedColIndex.value, selectedDirection.value)
+}
+
+const setOptimalRotation = () => {
+  if (datasetStore.hasData && datasetStore.columnNames.length > 0) {
+    visualizationStore.calculateAndSetOptimalLabelRotation(datasetStore.columnNames)
+    localSettings.labelRotation = visualizationStore.settings.labelRotation
+  }
+}
+
+const setRotation = (rotation: number) => {
+  localSettings.labelRotation = rotation
+  applySettings()
 }
 
 onMounted(() => {
@@ -557,5 +577,28 @@ onMounted(() => {
   background: var(--color-background-soft);
   border-radius: 3px;
   border: 1px solid var(--color-border);
+}
+
+.rotation-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-auto,
+.btn-preset {
+  padding: 6px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: white;
+  color: var(--color-text);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.btn-auto:hover,
+.btn-preset:hover {
+  background: var(--color-background-soft);
 }
 </style>

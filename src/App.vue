@@ -96,7 +96,7 @@ const minDataTablePanelWidth = 220
 const maxDataTablePanelWidth = 1200
 let isResizingDataTablePanel = false
 
-const startResizeDataTablePanel = (e: MouseEvent) => {
+const startResizeDataTablePanel = () => {
   isResizingDataTablePanel = true
   document.body.style.cursor = 'ew-resize'
   window.addEventListener('mousemove', resizeDataTablePanel)
@@ -199,7 +199,13 @@ const stopResizeDataTablePanel = () => {
           </div>
           <!-- PixiJS Visualization View -->
 
-          <div class="visualization-view">
+          <div
+            class="visualization-view"
+            :style="{
+              marginLeft: showDataTablePanel ? `${dataTablePanelWidth}px` : '0',
+              marginRight: showSettingsPanel ? '360px' : '0'
+            }"
+          >
             <PixiVisualizationWrapper ref="pixiVisRef" :useRandomData="false" />
           </div>
         </div>
@@ -476,6 +482,7 @@ const stopResizeDataTablePanel = () => {
   flex-direction: column;
   overflow: hidden;
   box-sizing: border-box;
+  transition: margin 0.3s ease;
 }
 
 .settings-toggle-btn {

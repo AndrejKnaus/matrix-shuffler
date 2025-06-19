@@ -14,7 +14,7 @@ const isResizing = ref(false)
 
 const drawer = ref<HTMLElement>()
 
-const startResize = (e: MouseEvent) => {
+const startResize = () => {
   isResizing.value = true
   document.addEventListener('mousemove', handleMouseMove)
   document.addEventListener('mouseup', stopResize)

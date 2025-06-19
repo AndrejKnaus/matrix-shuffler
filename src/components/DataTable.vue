@@ -98,25 +98,16 @@ const emit = defineEmits<{
 }>()
 
 const datasetStore = useDatasetStore()
-
-// convert reactive data to plain arrays for Handsontable
-const plainTableData = computed(() => {
-  return JSON.parse(JSON.stringify(tableData.value))
-})
-
-// Extract column headers (skip the first cell)
 const colHeaders = computed(() => {
   if (tableData.value.length === 0) return []
   return tableData.value[0].slice(1)
 })
 
-// Extract row headers (skip the first row, get first cell of each row)
 const rowHeaders = computed(() => {
   if (tableData.value.length <= 1) return []
   return tableData.value.slice(1).map((row) => row[0])
 })
 
-// Data for HotTable (remove header row and column)
 const hotTableData = computed(() => {
   if (tableData.value.length <= 1) return []
   return tableData.value.slice(1).map((row) => row.slice(1))
@@ -138,7 +129,6 @@ const getDataStatus = computed(() => {
   return `${rows} rows × ${cols} columns`
 })
 
-// Custom renderer for column headers to wrap and show tooltip
 const colHeaderRenderer = (col: number) => {
   const label = colHeaders.value[col] || ''
   return `<span class="hot-col-header" title="${label}">${label}</span>`
@@ -186,13 +176,17 @@ const updateDatasetStore = (data: TableData, preserveNormalization: boolean = fa
 
   datasetStore.setParsedData(rowNames, columnNames, numericData)
 
+  const visualizationStore = useVisualizationStore()
+  if (columnNames.length > 0) {
+    visualizationStore.calculateAndSetOptimalLabelRotation(columnNames)
+  }
+
   if (preserveNormalization && currentNormalizationType) {
     datasetStore.setNormalizationType(currentNormalizationType)
     if (currentNormalizationType !== 'none') {
       datasetStore.normalizeData()
     }
   } else {
-    const visualizationStore = useVisualizationStore()
     const currentNormalization = visualizationStore.settings.normalization
 
     datasetStore.setNormalizationType(currentNormalization)
