@@ -6,6 +6,7 @@ import DataTable from './components/DataTable.vue'
 import SettingsPanel from './components/SettingsPanel.vue'
 
 import { useVisualizationStore } from './stores/visualization'
+import { useDatasetStore } from './stores/dataset'
 
 import { useFileUpload } from '@/utils/utils'
 
@@ -13,6 +14,7 @@ const showImportModal = ref(false)
 const showExampleModal = ref(false)
 
 const visualizationStore = useVisualizationStore()
+const datasetStore = useDatasetStore()
 
 const changeEncoding = (encoding: string) => {
   visualizationStore.setEncoding(encoding as 'circle' | 'color' | 'circle-color' | 'color-text')
@@ -159,6 +161,29 @@ const stopResizeDataTablePanel = () => {
   window.removeEventListener('mousemove', resizeDataTablePanel)
   window.removeEventListener('mouseup', stopResizeDataTablePanel)
 }
+
+const exportDatasetAsCSV = () => {
+  const matrix = datasetStore.currentMatrix
+  if (!matrix || !matrix.rowNames.length || !matrix.columnNames.length) {
+    alert('No dataset loaded to export.')
+    return
+  }
+  const header = [''].concat(matrix.columnNames).join(',')
+  const rows = matrix.rowNames.map((rowName, i) => {
+    const row = matrix.values[i].map((cell) => cell.initialValue)
+    return [rowName, ...row].join(',')
+  })
+  const csvContent = [header, ...rows].join('\n')
+  const blob = new Blob([csvContent], { type: 'text/csv' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = datasetStore.datasetName || importedDisplayName.value?.replace(/\.[^/.]+$/, '.csv') || 'exported_data.csv'
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}
 </script>
 
 <template>
@@ -171,7 +196,7 @@ const stopResizeDataTablePanel = () => {
             <div class="dropdown-content">
               <a href="#" @click.prevent="handleImportData">Import Data</a>
               <a href="#" @click.prevent="openExampleModal">Load Example Dataset</a>
-              <a href="#">Export Data</a>
+              <a href="#" @click.prevent="exportDatasetAsCSV">Export Data</a>
               <a href="#" @click="exportAsPNG">Export as PNG</a>
               <a href="#">Export as SVG</a>
             </div>
