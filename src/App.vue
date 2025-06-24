@@ -10,6 +10,7 @@ import { useVisualizationStore } from './stores/visualization'
 import { useFileUpload } from '@/utils/utils'
 
 const showImportModal = ref(false)
+const showExampleModal = ref(false)
 
 const visualizationStore = useVisualizationStore()
 
@@ -81,6 +82,49 @@ const handleCSVImport = (event: Event) => {
   closeImportModal()
 }
 
+const exampleDatasets = [
+  { name: 'appropriateness.csv', path: '/examples/appropriateness.csv' },
+  { name: 'bertin_hotel.csv', path: '/examples/bertin_hotel.csv' },
+  { name: 'bertin_navy.csv', path: '/examples/bertin_navy.csv' },
+  { name: 'bertin_towns.csv', path: '/examples/bertin_towns.csv' },
+  { name: 'european_values.csv', path: '/examples/european_values.csv' },
+  { name: 'sample_data.csv', path: '/examples/sample_data.csv' },
+  { name: 'test_data.csv', path: '/examples/test_data.csv' },
+]
+
+const openExampleModal = () => {
+  showExampleModal.value = true
+}
+const closeExampleModal = () => {
+  showExampleModal.value = false
+}
+
+const handleLoadExample = async (dataset: { name: string; path: string }) => {
+  try {
+    // Fetch CSV from public/examples
+    showDataTablePanel.value = true
+    console.log('Loading example dataset:', dataset.name, dataset.path)
+    const response = await fetch(dataset.path)
+    const csv = await response.text()
+    const lines = csv.split('\n').filter((line) => line.trim())
+    const data = lines.map((line) => {
+      const values = line.split(',').map((val) => val.trim())
+      return values.map((val, index) => {
+        if (index === 0) return val
+        const num = parseFloat(val)
+        return isNaN(num) ? val : num
+      })
+    })
+    if (dataTableRef.value && data.length > 0) {
+      importedDisplayName.value = dataset.name
+      dataTableRef.value.loadFromCSV(data, dataset.name)
+    }
+    closeExampleModal()
+  } catch {
+    alert('Failed to load example dataset: ' + dataset.name)
+  }
+}
+
 const showSettingsPanel = ref(false)
 const toggleSettingsPanel = () => {
   showSettingsPanel.value = !showSettingsPanel.value
@@ -126,7 +170,7 @@ const stopResizeDataTablePanel = () => {
             <a href="#" class="dropbtn">File</a>
             <div class="dropdown-content">
               <a href="#" @click.prevent="handleImportData">Import Data</a>
-              <a href="#">Load Example Dataset</a>
+              <a href="#" @click.prevent="openExampleModal">Load Example Dataset</a>
               <a href="#">Export Data</a>
               <a href="#" @click="exportAsPNG">Export as PNG</a>
               <a href="#">Export as SVG</a>
@@ -257,6 +301,35 @@ const stopResizeDataTablePanel = () => {
             {{ showFileData ? 'Hide' : 'Show' }} File Summary
           </button>
           -->
+        </div>
+      </div>
+    </div>
+
+    <div v-if="showExampleModal" class="modal-overlay" @click.self="closeExampleModal">
+      <div class="modal-content">
+        <button class="modal-close-button" @click="closeExampleModal">&times;</button>
+        <h3>Load Example Dataset</h3>
+        <p>Select an example dataset to load:</p>
+        <ul style="list-style: none; padding: 0">
+          <li v-for="dataset in exampleDatasets" :key="dataset.name" style="margin-bottom: 10px">
+            <button
+              @click="handleLoadExample(dataset)"
+              style="
+                width: 100%;
+                text-align: left;
+                padding: 8px 12px;
+                border-radius: 4px;
+                border: 1px solid #ccc;
+                background: #f7f7f7;
+                cursor: pointer;
+              "
+            >
+              {{ dataset.name }}
+            </button>
+          </li>
+        </ul>
+        <div class="modal-actions">
+          <button @click="closeExampleModal">Cancel</button>
         </div>
       </div>
     </div>
@@ -593,5 +666,30 @@ const stopResizeDataTablePanel = () => {
 }
 .resize-handle:hover {
   background: rgba(0, 0, 0, 0.07);
+}
+
+.example-dataset-list {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+}
+
+.example-dataset-item {
+  margin: 10px 0;
+}
+
+.load-example-btn {
+  background-color: var(--color-primary-light);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 10px 15px;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+}
+
+.load-example-btn:hover {
+  background-color: var(--color-primary);
 }
 </style>
