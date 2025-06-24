@@ -92,7 +92,7 @@ const toggleDataTablePanel = () => {
 }
 
 const dataTablePanelWidth = ref(340)
-const minDataTablePanelWidth = 220
+const minDataTablePanelWidth = 340
 const maxDataTablePanelWidth = 1200
 let isResizingDataTablePanel = false
 
@@ -203,7 +203,7 @@ const stopResizeDataTablePanel = () => {
             class="visualization-view"
             :style="{
               marginLeft: showDataTablePanel ? `${dataTablePanelWidth}px` : '0',
-              marginRight: showSettingsPanel ? '360px' : '0'
+              marginRight: showSettingsPanel ? '360px' : '0',
             }"
           >
             <PixiVisualizationWrapper ref="pixiVisRef" :useRandomData="false" />
@@ -415,8 +415,6 @@ const stopResizeDataTablePanel = () => {
   color: white;
   border: 1px solid var(--color-primary);
 }
-
-/* Removed - now defined below in main-content section */
 
 .wrapper {
   display: flex;
