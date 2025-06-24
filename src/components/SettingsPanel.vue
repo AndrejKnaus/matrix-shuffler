@@ -132,10 +132,16 @@
             <button @click="datasetStore.resetOrder()" class="sort-btn">Reset Order</button>
             <button @click="datasetStore.shuffleRows()" class="sort-btn">Shuffle Rows</button>
             <button @click="datasetStore.shuffleColumns()" class="sort-btn">Shuffle Cols</button>
-            <button @click="datasetStore.applySeriation()" class="sort-btn-accent">
-              Seriation
+          </div>
+        </div>
+
+        <div class="sort-subsection">
+          <h5>Algorithmic Solutions</h5>
+          <div class="sort-button-grid">
+            <button @click="datasetStore.applySeriation()" class="sort-btn">
+              Greedy Seriation
             </button>
-            <button @click="datasetStore.twoDimSort()" class="sort-btn-accent">2D Sort</button>
+            <button @click="datasetStore.twoDimSort()" class="sort-btn">2D Sort</button>
           </div>
         </div>
 
@@ -447,7 +453,7 @@ onMounted(() => {
   border: 1px solid var(--color-border);
   border-radius: 4px;
   background: white;
-  color: var(--color-primary-light);
+  color: black;
   cursor: pointer;
   transition: all 0.2s;
 }
