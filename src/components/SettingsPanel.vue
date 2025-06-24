@@ -268,8 +268,8 @@ const applyColorScheme = (scheme: keyof typeof colorSchemes) => {
 
 const resetSettings = () => {
   localSettings.colorScheme = 'blues'
-  localSettings.minColor = '#f0f8ff'
-  localSettings.maxColor = '#1e40af'
+  localSettings.minColor = '#e3f0fb'
+  localSettings.maxColor = '#7daee6'
   localSettings.normalization = 'none'
   localSettings.labelRotation = 45 // Changed from 90 to match new default
   applySettings()
