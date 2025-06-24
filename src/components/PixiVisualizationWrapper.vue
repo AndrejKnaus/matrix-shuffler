@@ -99,4 +99,8 @@ defineExpose({
   justify-content: center;
   align-items: center;
 }
+
+.no-data-container {
+  user-select: none !important;
+}
 </style>

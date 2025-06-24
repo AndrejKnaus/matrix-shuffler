@@ -1,7 +1,7 @@
 <template>
   <div class="data-table-container">
     <div class="data-table-header">
-      <h3>Dataset</h3>
+      <h3 class="data-table-title">Dataset</h3>
       <div class="data-table-controls">
         <div class="button-group">
           <button @click="loadSampleData" class="btn-primary">Load Sample Data</button>
@@ -307,6 +307,7 @@ onMounted(() => {
   font-weight: 600;
   margin-bottom: 6px;
   color: var(--color-text);
+  user-select: none !important;
 }
 
 .recent-list {
@@ -383,6 +384,7 @@ onMounted(() => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  user-select: none !important;
 }
 
 /* Responsive adjustments */
@@ -420,6 +422,7 @@ onMounted(() => {
   min-width: fit-content;
   flex: 0 1 auto;
   white-space: nowrap;
+  user-select: none !important;
 }
 
 @media (min-width: 540px) {
@@ -486,6 +489,10 @@ onMounted(() => {
 .empty-state p {
   margin: 16px;
   font-size: 16px;
+}
+
+.data-table-header {
+  user-select: none !important;
 }
 
 /* Basic Handsontable styling */

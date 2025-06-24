@@ -1,12 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
-import {
-  Application,
-  Container,
-  Graphics,
-  BitmapText,
-  FederatedPointerEvent,
-} from 'pixi.js'
+import { Application, Container, Graphics, BitmapText, FederatedPointerEvent } from 'pixi.js'
 import { useVisualizationStore } from '../stores/visualization'
 import { type MatrixCell, type MatrixData } from '@/stores/dataset'
 
@@ -455,7 +449,7 @@ const renderMatrix = (cellSize: number, padding: number, container: Container) =
   rowLabelPadding.value = maxLabelWidth + labelPadding
 
   let maxLabelHeight = 0
-    const columnLabelContainer = new Container()
+  const columnLabelContainer = new Container()
   columnLabelObjects.value = []
 
   let labelAngleDegrees = visualizationStore.settings.labelRotation
@@ -471,8 +465,8 @@ const renderMatrix = (cellSize: number, padding: number, container: Container) =
         fill: '#000000',
       },
     })
-      //colLabel.rotation = -Math.PI / 2
-      colLabel.rotation = -(labelAngleDegrees * Math.PI) / 180
+    //colLabel.rotation = -Math.PI / 2
+    colLabel.rotation = -(labelAngleDegrees * Math.PI) / 180
     colLabel.x = col * (cellSize + padding) + rowLabelPadding.value + cellSize / 2
     colLabel.y = 0
     colLabel.anchor = { x: 0, y: 0.5 }
@@ -525,10 +519,9 @@ const renderMatrix = (cellSize: number, padding: number, container: Container) =
   }
 }
 
- const hexToPixiColor = (hex: string): number => {
+const hexToPixiColor = (hex: string): number => {
   return parseInt(hex.replace('#', ''), 16)
 }
-
 
 const getInterpolatedColor = (value: number): number => {
   try {
@@ -961,11 +954,6 @@ watch(isPanning, (active) => {
 })
 
 onUnmounted(() => {
-  if (resizeTimeout) {
-    clearTimeout(resizeTimeout)
-    resizeTimeout = null
-  }
-
   if (app.value) {
     app.value.destroy(true)
     app.value = null
@@ -975,7 +963,6 @@ onUnmounted(() => {
   window.removeEventListener('keyup', handleKeyUp)
 })
 </script>
-
 
 <template>
   <div class="pixi-matrix-container">
