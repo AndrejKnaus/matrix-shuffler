@@ -70,7 +70,7 @@ const handleCSVImport = (event: Event) => {
         })
 
         if (dataTableRef.value && data.length > 0) {
-          const displayName = file.name?.replace(/\.[^/.]+$/, '') || 'Imported CSV'
+          const displayName = file.name || 'Imported CSV'
           importedDisplayName.value = displayName
           dataTableRef.value.loadFromCSV(data, displayName)
         }
