@@ -140,7 +140,11 @@ const rowHeaderRenderer = (row: number) => {
   return `<span class=\"hot-row-header\" title=\"${label}\">${label}</span>`
 }
 
-const updateDatasetStore = (data: TableData, preserveNormalization: boolean = false) => {
+const updateDatasetStore = (
+  data: TableData,
+  preserveNormalization: boolean = false,
+  datasetName?: string,
+) => {
   if (data.length === 0 || !hasRealData.value) {
     datasetStore.reset()
     return
@@ -174,25 +178,16 @@ const updateDatasetStore = (data: TableData, preserveNormalization: boolean = fa
 
   const currentNormalizationType = preserveNormalization ? datasetStore.normalizationType : null
 
-  datasetStore.setParsedData(rowNames, columnNames, numericData)
+  datasetStore.setParsedData(rowNames, columnNames, numericData, datasetName)
 
   const visualizationStore = useVisualizationStore()
   if (columnNames.length > 0) {
     visualizationStore.calculateAndSetOptimalLabelRotation(columnNames)
   }
 
-  if (preserveNormalization && currentNormalizationType) {
+  if (currentNormalizationType) {
     datasetStore.setNormalizationType(currentNormalizationType)
-    if (currentNormalizationType !== 'none') {
-      datasetStore.normalizeData()
-    }
-  } else {
-    const currentNormalization = visualizationStore.settings.normalization
-
-    datasetStore.setNormalizationType(currentNormalization)
-    if (currentNormalization !== 'none') {
-      datasetStore.normalizeData()
-    }
+    datasetStore.normalizeData()
   }
 }
 
@@ -232,7 +227,7 @@ const loadFromCSV = (csvData: TableData, name = 'Imported CSV') => {
   console.log('loadFromCSV:', name)
   tableData.value = csvData
   tableKey.value++
-  updateDatasetStore(csvData)
+  updateDatasetStore(csvData, false, name)
   emit('dataChanged', tableData.value)
   saveRecentDataset(name, csvData)
 }

@@ -33,9 +33,15 @@ export const useDatasetStore = defineStore('dataset', {
     rowOrder: [] as number[], // Current row order (saved as index of rowNames)
     columnOrder: [] as number[], // Current column order (saved as index of columnNames)
     hasData: Boolean(false), // Flag to check if data is set
+    datasetName: '' as string, // Name of the loaded dataset
   }),
   actions: {
-    setParsedData(rowNames: string[], columnNames: string[], data: number[][]) {
+    setParsedData(
+      rowNames: string[],
+      columnNames: string[],
+      data: number[][],
+      datasetName?: string,
+    ) {
       this.rowNames = rowNames
       this.columnNames = columnNames
       this.initialData = data
@@ -45,6 +51,7 @@ export const useDatasetStore = defineStore('dataset', {
       this.rowOrder = rowNames.map((name) => rowNames.indexOf(name))
       this.columnOrder = columnNames.map((name) => columnNames.indexOf(name))
       this.hasData = true
+      this.datasetName = datasetName || ''
     },
     setNormalizationType(type: 'none' | 'row' | 'column' | 'global') {
       this.normalizationType = type
@@ -133,6 +140,7 @@ export const useDatasetStore = defineStore('dataset', {
       this.rowOrder = []
       this.columnOrder = []
       this.hasData = false
+      this.datasetName = ''
     },
     resetOrder() {
       this.rowOrder = this.rowNames.map((name) => this.rowNames.indexOf(name))

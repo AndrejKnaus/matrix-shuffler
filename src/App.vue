@@ -178,7 +178,10 @@ const exportDatasetAsCSV = () => {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = datasetStore.datasetName || importedDisplayName.value?.replace(/\.[^/.]+$/, '.csv') || 'exported_data.csv'
+  a.download =
+    datasetStore.datasetName ||
+    importedDisplayName.value?.replace(/\.[^/.]+$/, '.csv') ||
+    'exported_data.csv'
   document.body.appendChild(a)
   a.click()
   document.body.removeChild(a)
