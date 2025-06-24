@@ -26,7 +26,7 @@
     </div>
     <div class="handsontable-container" ref="tableContainer">
       <div v-if="tableData.length === 0 || !hasRealData" class="empty-state">
-        <p>No data loaded. Click "Load Sample Data" to get started.</p>
+        <p class="empty-state-message">No data loaded. Click "Load Sample Data" to get started.</p>
       </div>
       <HotTable
         v-else
@@ -237,6 +237,26 @@ const loadFromCSV = (csvData: TableData, name = 'Imported CSV') => {
   saveRecentDataset(name, csvData)
 }
 
+const loadDataset = () => {
+  const currentMatrix = datasetStore.currentMatrix
+  if (currentMatrix) {
+    const { rowNames, columnNames, values } = currentMatrix
+    const newTableData: TableData = []
+
+    newTableData.push(['', ...columnNames])
+
+    for (let i = 0; i < rowNames.length; i++) {
+      newTableData.push([rowNames[i], ...values[i].map((v) => v.initialValue)])
+    }
+
+    tableData.value = newTableData
+    tableKey.value++
+    emit('dataChanged', tableData.value)
+  } else {
+    console.warn('No dataset found in store')
+  }
+}
+
 const transposeData = () => {
   if (tableData.value.length === 0) return
 
@@ -273,6 +293,7 @@ const onDataChange = (changes: unknown) => {
 onMounted(() => {
   // Component ready
   loadRecentDatasets()
+  loadDataset()
 })
 </script>
 
@@ -304,6 +325,7 @@ onMounted(() => {
   cursor: pointer;
   white-space: nowrap;
   transition: background 0.2s;
+  user-select: none !important;
 }
 
 .recent-btn:hover {
@@ -379,6 +401,10 @@ onMounted(() => {
   }
 }
 
+.empty-state-message {
+  user-select: none !important;
+}
+
 .btn-primary,
 .btn-secondary {
   padding: 6px 10px;
@@ -418,6 +444,7 @@ onMounted(() => {
   background: var(--color-primary-light);
   color: white;
   border-color: var(--color-primary-light);
+  user-select: none !important;
 }
 
 .btn-primary:hover {
@@ -429,6 +456,7 @@ onMounted(() => {
   background: white;
   color: var(--color-text);
   border-color: var(--color-border);
+  user-select: none !important;
 }
 
 .btn-secondary:hover {
@@ -452,10 +480,11 @@ onMounted(() => {
   background: var(--color-background);
   border: 2px dashed var(--color-border);
   border-radius: 8px;
+  user-select: none !important;
 }
 
 .empty-state p {
-  margin: 0;
+  margin: 16px;
   font-size: 16px;
 }
 
@@ -511,5 +540,11 @@ onMounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+:deep(.handsontable),
+:deep(.handsontable td),
+:deep(.handsontable th) {
+  user-select: none !important;
 }
 </style>
