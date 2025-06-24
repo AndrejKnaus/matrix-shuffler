@@ -51,6 +51,8 @@ const tooltip = ref<{ x: number; y: number; content: string } | null>(null)
 const hoveredCell = ref<{ event: FederatedPointerEvent; cellInfo: MatrixCell } | null>(null)
 const isTooltipModifierPressed = ref(false)
 
+let resizeTimeout: number | null = null
+
 interface DragState {
   isDragging: boolean
   dragMode: 'row' | 'column' | null
@@ -634,7 +636,7 @@ const createCircleCell = (
   normalizedValue: number,
 ) => {
   const borderColor = getInterpolatedColor(normalizedValue)
-  rect.setStrokeStyle({ width: 1, color: borderColor, alignment: 0.5 }) 
+  rect.setStrokeStyle({ width: 1, color: borderColor, alignment: 0.5 })
   rect.fill({ color: 0xfff, alpha: 0 })
   rect.rect(0, 0, cellSize, cellSize)
   rect.endFill()

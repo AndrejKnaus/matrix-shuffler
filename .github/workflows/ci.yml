@@ -49,7 +49,17 @@ jobs:
       - name: type check
         run: pnpm type-check
 
+      - name: check for test files
+        id: check-tests
+        run: |
+          if [ -n "$(find . -name '*.test.*' -o -name '*.spec.*' | head -1)" ]; then
+            echo "tests-exist=true" >> $GITHUB_OUTPUT
+          else
+            echo "tests-exist=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: test
+        if: steps.check-tests.outputs.tests-exist == 'true'
         run: pnpm test:unit
 
       - name: build
