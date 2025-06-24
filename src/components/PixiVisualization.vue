@@ -46,6 +46,7 @@ const hoveredCell = ref<{ event: FederatedPointerEvent; cellInfo: MatrixCell } |
 const isTooltipModifierPressed = ref(false)
 
 let resizeTimeout: number | null = null
+let resizeObserver: ResizeObserver | null = null
 
 interface DragState {
   isDragging: boolean
@@ -841,14 +842,22 @@ const handleKeyUp = (e: KeyboardEvent) => {
 const resizePixi = () => {
   if (!app.value || !containerRef.value) return
 
-  const width = containerRef.value.clientWidth || window.innerWidth
-  const height = containerRef.value.clientHeight || window.innerHeight
-
-  app.value.renderer.resize(width, height)
-
-  if (app.value.stage.children.length > 0) {
-    centerContainer(app.value.stage.children[0] as Container)
+  if (resizeTimeout) {
+    clearTimeout(resizeTimeout)
   }
+
+  resizeTimeout = window.setTimeout(() => {
+    if (!app.value || !containerRef.value) return
+
+    const width = containerRef.value.clientWidth || window.innerWidth
+    const height = containerRef.value.clientHeight || window.innerHeight
+
+    app.value.renderer.resize(width, height)
+
+    if (app.value.stage.children.length > 0) {
+      centerContainer(app.value.stage.children[0] as Container)
+    }
+  }, 100)
 }
 
 onMounted(async () => {
@@ -859,6 +868,15 @@ onMounted(async () => {
   window.addEventListener('resize', resizePixi)
   window.addEventListener('keydown', handleKeyDown)
   window.addEventListener('keyup', handleKeyUp)
+
+  if (containerRef.value) {
+    resizeObserver = new ResizeObserver((entries) => {
+      if (entries.length > 0) {
+        resizePixi()
+      }
+    })
+    resizeObserver.observe(containerRef.value)
+  }
 
   window.addEventListener('keydown', (e) => {
     if (e.code === 'Space') isPanning.value = true
@@ -954,6 +972,16 @@ watch(isPanning, (active) => {
 })
 
 onUnmounted(() => {
+  if (resizeTimeout) {
+    clearTimeout(resizeTimeout)
+    resizeTimeout = null
+  }
+
+  if (resizeObserver) {
+    resizeObserver.disconnect()
+    resizeObserver = null
+  }
+
   if (app.value) {
     app.value.destroy(true)
     app.value = null
