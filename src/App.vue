@@ -121,13 +121,13 @@ const handleCSVImport = (event: Event) => {
 }
 
 const exampleDatasets = [
-  { name: 'appropriateness.csv', path: '/examples/appropriateness.csv' },
-  { name: 'bertin_hotel.csv', path: '/examples/bertin_hotel.csv' },
-  { name: 'bertin_navy.csv', path: '/examples/bertin_navy.csv' },
-  { name: 'bertin_towns.csv', path: '/examples/bertin_towns.csv' },
-  { name: 'european_values.csv', path: '/examples/european_values.csv' },
-  { name: 'sample_data.csv', path: '/examples/sample_data.csv' },
-  { name: 'test_data.csv', path: '/examples/test_data.csv' },
+  { name: 'appropriateness.csv', path: './examples/appropriateness.csv' },
+  { name: 'bertin_hotel.csv', path: './examples/bertin_hotel.csv' },
+  { name: 'bertin_navy.csv', path: './examples/bertin_navy.csv' },
+  { name: 'bertin_towns.csv', path: './examples/bertin_towns.csv' },
+  { name: 'european_values.csv', path: './examples/european_values.csv' },
+  { name: 'sample_data.csv', path: './examples/sample_data.csv' },
+  { name: 'test_data.csv', path: './examples/test_data.csv' },
 ]
 
 const openExampleModal = () => {
