@@ -9,6 +9,7 @@ import { useVisualizationStore } from './stores/visualization'
 import { useDatasetStore } from './stores/dataset'
 
 import { useFileUpload } from '@/utils/utils'
+import { generateMatrixSVG } from '@/utils/svgGenerator'
 
 const showImportModal = ref(false)
 const showExampleModal = ref(false)
@@ -42,6 +43,40 @@ const exportAsPNG = () => {
     ? importedDisplayName.value.replace(/\.[^/.]+$/, '.png')
     : 'exported_image.png'
   pixiVisRef.value?.$refs?.pixiVisualizationRef?.exportCanvasAsPNG?.(name)
+}
+
+const exportAsSVG = () => {
+  const matrix = datasetStore.currentMatrix
+  if (!matrix || !matrix.rowNames.length || !matrix.columnNames.length) {
+    alert('No dataset loaded to export.')
+    return
+  }
+  const encoding = visualizationStore.config.encoding || 'circle'
+  const cellSize = visualizationStore.config.matrixCellDimension || 40
+  const cellSpacing = visualizationStore.config.matrixCellSpacing || 2
+  const labelRotation = visualizationStore.settings.labelRotation || 0
+  const minColor = visualizationStore.settings.minColor || '#e3f0fb'
+  const maxColor = visualizationStore.settings.maxColor || '#7daee6'
+  const svg = generateMatrixSVG(matrix, {
+    encoding,
+    cellSize,
+    cellSpacing,
+    labelRotation,
+    minColor,
+    maxColor,
+  })
+  const blob = new Blob([svg], { type: 'image/svg+xml' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download =
+    datasetStore.datasetName.replace(/\.[^/.]+$/, '.svg') ||
+    importedDisplayName.value?.replace(/\.[^/.]+$/, '.svg') ||
+    'exported_visualization.svg'
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
 }
 
 const handleTranspose = () => {
@@ -201,7 +236,7 @@ const exportDatasetAsCSV = () => {
               <a href="#" @click.prevent="openExampleModal">Load Example Dataset</a>
               <a href="#" @click.prevent="exportDatasetAsCSV">Export Data</a>
               <a href="#" @click="exportAsPNG">Export as PNG</a>
-              <a href="#">Export as SVG</a>
+              <a href="#" @click="exportAsSVG">Export as SVG</a>
             </div>
           </li>
           <li class="dropdown">

@@ -638,7 +638,7 @@ const createCircleCell = (
   const valueIndicator = new Graphics()
   const fillColor = getInterpolatedColor(normalizedValue)
   valueIndicator.fill({ color: fillColor, alpha: 0.9 })
-  valueIndicator.circle(cellSize / 2, cellSize / 2, normalizedValue * (cellSize / 3))
+  valueIndicator.circle(cellSize / 2, cellSize / 2, normalizedValue * (cellSize / 2))
   valueIndicator.endFill()
 
   cell.addChild(valueIndicator)
