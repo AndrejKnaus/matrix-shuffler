@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-// import Introduction from './components/Introduction.vue'
 import PixiVisualizationWrapper from './components/PixiVisualizationWrapper.vue'
 import DataTable from './components/DataTable.vue'
 import SettingsPanel from './components/SettingsPanel.vue'
@@ -13,6 +12,8 @@ import { generateMatrixSVG } from '@/utils/svgGenerator'
 
 const showImportModal = ref(false)
 const showExampleModal = ref(false)
+const showAboutModal = ref(false)
+const showHowToUseModal = ref(false)
 
 const visualizationStore = useVisualizationStore()
 const datasetStore = useDatasetStore()
@@ -222,6 +223,20 @@ const exportDatasetAsCSV = () => {
   document.body.removeChild(a)
   URL.revokeObjectURL(url)
 }
+
+const openAboutModal = () => {
+  showAboutModal.value = true
+}
+const closeAboutModal = () => {
+  showAboutModal.value = false
+}
+
+const openHowToUseModal = () => {
+  showHowToUseModal.value = true
+}
+const closeHowToUseModal = () => {
+  showHowToUseModal.value = false
+}
 </script>
 
 <template>
@@ -262,13 +277,8 @@ const exportDatasetAsCSV = () => {
           <li class="dropdown">
             <a href="#" class="dropbtn">Help</a>
             <div class="dropdown-content">
-              <a href="#">About</a>
-              <a
-                href="https://github.com/AndrejKnaus/matrix-shuffler"
-                target="_blank"
-                rel="noopener"
-                >Github</a
-              >
+              <a href="#" @click.prevent="openHowToUseModal">How to use</a>
+              <a href="#" @click.prevent="openAboutModal">About</a>
             </div>
           </li>
         </ul>
@@ -394,6 +404,40 @@ const exportDatasetAsCSV = () => {
         <div class="modal-actions">
           <button @click="closeExampleModal">Cancel</button>
         </div>
+      </div>
+    </div>
+
+    <div v-if="showAboutModal" class="modal-overlay" @click.self="closeAboutModal">
+      <div class="modal-content">
+        <button class="modal-close-button" @click="closeAboutModal">&times;</button>
+        <h2>About Matrix Shuffler</h2>
+        <p>
+          Matrix Shuffler is an interactive tool for visualizing and reordering matrices. It
+          supports various encodings and export options.<br /><br />
+          <strong>License:</strong> MIT<br />
+          <strong
+            >Created as part of the Information Visualisation course at Graz University of
+            Technology (Technische Universität Graz).</strong
+          ><br /><br />
+          Created by Andrej Knaus, Esma Karic, and Laura Thaçi.<br />
+          <a href="https://github.com/AndrejKnaus/matrix-shuffler" target="_blank" rel="noopener"
+            >Project on GitHub</a
+          >
+        </p>
+      </div>
+    </div>
+
+    <div v-if="showHowToUseModal" class="modal-overlay" @click.self="closeHowToUseModal">
+      <div class="modal-content">
+        <button class="modal-close-button" @click="closeHowToUseModal">&times;</button>
+        <h2>How to use</h2>
+        <ul style="padding-left: 1.2em">
+          <li><b>Reorder row/column:</b> Click and drag row/column cells</li>
+          <li><b>Pan visualization:</b> Hold <kbd>Space</kbd> and drag cells</li>
+          <li><b>Show tooltip:</b> Hover cell and hold <kbd>Alt</kbd> or <kbd>⌘ Cmd</kbd></li>
+          <li><b>Transpose matrix:</b> Use the Actions menu</li>
+          <li><b>Export:</b> Use File menu for PNG/SVG/CSV</li>
+        </ul>
       </div>
     </div>
 
