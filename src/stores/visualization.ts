@@ -8,16 +8,17 @@ export interface VisualizationSettings {
   maxColor: string
   normalization: 'none' | 'row' | 'column' | 'global'
   labelRotation: number
+  cellSize: number
 }
 
 const calculateOptimalLabelRotation = (
   columnNames: string[],
   cellSize: number,
-  fontSize: number = 14
+  fontSize: number = 14,
 ): number => {
   if (!columnNames || columnNames.length === 0) return 45
 
-  const maxLabelLength = Math.max(...columnNames.map(name => name.length))
+  const maxLabelLength = Math.max(...columnNames.map((name) => name.length))
   const estimatedTextWidth = maxLabelLength * fontSize * 0.6
 
   const availableWidth = cellSize
@@ -61,6 +62,7 @@ export const useVisualizationStore = defineStore('visualization', {
       maxColor: '#7daee6',
       normalization: 'none',
       labelRotation: 45,
+      cellSize: 40,
     },
   }),
   actions: {
@@ -76,10 +78,18 @@ export const useVisualizationStore = defineStore('visualization', {
     setNormalization(normalization: 'none' | 'row' | 'column' | 'global') {
       this.settings.normalization = normalization
     },
+    setMatrixCellDimension(dimension: number) {
+      this.config.matrixCellDimension = dimension
+      this.settings.cellSize = dimension
+    },
+    setCellSize(size: number) {
+      this.settings.cellSize = size
+      this.config.matrixCellDimension = size
+    },
     calculateAndSetOptimalLabelRotation(columnNames: string[], cellSize?: number) {
       const optimalRotation = calculateOptimalLabelRotation(
         columnNames,
-        cellSize || this.config.matrixCellDimension
+        cellSize || this.config.matrixCellDimension,
       )
       this.settings.labelRotation = optimalRotation
     },

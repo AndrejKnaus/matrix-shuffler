@@ -71,6 +71,26 @@
       </div>
 
       <div class="setting-group">
+        <h3 class="settings-heading">Cell Size</h3>
+        <label>
+          Cell Dimension: {{ localSettings.cellSize }}px
+          <input
+            type="range"
+            min="10"
+            max="40"
+            step="1"
+            v-model.number="localSettings.cellSize"
+            @input="applyCellSizeSettings"
+          />
+        </label>
+        <div class="cell-size-controls">
+          <button @click="setCellSize(10)" class="btn-preset">10px</button>
+          <button @click="setCellSize(20)" class="btn-preset">20px</button>
+          <button @click="setCellSize(40)" class="btn-preset">40px</button>
+        </div>
+      </div>
+
+      <div class="setting-group">
         <h3 class="settings-heading">Visualization Colors</h3>
         <div class="color-inputs">
           <div class="color-input-group">
@@ -239,6 +259,7 @@ const localSettings = reactive<VisualizationSettings>({
   maxColor: '#7daee6',
   normalization: 'none',
   labelRotation: 90,
+  cellSize: 40,
 })
 
 const colorSchemes = {
@@ -272,6 +293,7 @@ const resetSettings = () => {
   localSettings.maxColor = '#7daee6'
   localSettings.normalization = 'none'
   localSettings.labelRotation = 45 // Changed from 90 to match new default
+  localSettings.cellSize = 40
   applySettings()
 }
 
@@ -305,6 +327,20 @@ const setOptimalRotation = () => {
 const setRotation = (rotation: number) => {
   localSettings.labelRotation = rotation
   applySettings()
+}
+
+const applyCellSizeSettings = () => {
+  const cellSize = Number(localSettings.cellSize)
+  visualizationStore.setCellSize(cellSize)
+  if (datasetStore.hasData && datasetStore.columnNames.length > 0) {
+    visualizationStore.calculateAndSetOptimalLabelRotation(datasetStore.columnNames, cellSize)
+  }
+  applySettings()
+}
+
+const setCellSize = (size: number) => {
+  localSettings.cellSize = size
+  applyCellSizeSettings()
 }
 
 onMounted(() => {
@@ -586,6 +622,11 @@ onMounted(() => {
 }
 
 .rotation-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.cell-size-controls {
   display: flex;
   gap: 8px;
 }
