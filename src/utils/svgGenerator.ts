@@ -95,7 +95,7 @@ export function generateMatrixSVG(
     max = 1
   }
 
-  let svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${width}' height='${height}' font-family='sans-serif' font-size='${fontSize}'>\n`
+  let svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 ${width} ${height}' font-family='sans-serif' font-size='${fontSize}'>\n`
 
   // Column labels (rotated if needed)
   svg += `<g class='col-labels'>\n`
