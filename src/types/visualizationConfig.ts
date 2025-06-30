@@ -8,6 +8,7 @@ export interface VisualizationConfig {
   encoding: VisualizationEncoding
   matrixCellDimension: number
   matrixCellSpacing: number
+  labelSize: number
 }
 
 export type VisualizationEncoding = 'circle' | 'color' | 'circle-color' | 'color-text'

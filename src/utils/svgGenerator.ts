@@ -5,7 +5,7 @@ interface SvgGenOptions {
   cellSize: number
   cellSpacing: number
   labelRotation: number
-  fontSize?: number
+  fontSize: number
 }
 
 // Helper: hex color to RGB

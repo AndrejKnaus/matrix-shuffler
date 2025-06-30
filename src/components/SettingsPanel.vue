@@ -331,7 +331,7 @@ const setRotation = (rotation: number) => {
 
 const applyCellSizeSettings = () => {
   const cellSize = Number(localSettings.cellSize)
-  visualizationStore.setCellSize(cellSize)
+  visualizationStore.setMatrixCellDimension(cellSize)
   if (datasetStore.hasData && datasetStore.columnNames.length > 0) {
     visualizationStore.calculateAndSetOptimalLabelRotation(datasetStore.columnNames, cellSize)
   }

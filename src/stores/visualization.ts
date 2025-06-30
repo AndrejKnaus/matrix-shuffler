@@ -55,6 +55,7 @@ export const useVisualizationStore = defineStore('visualization', {
       encoding: 'color',
       matrixCellDimension: 40,
       matrixCellSpacing: 2,
+      labelSize: 14,
     },
     settings: {
       colorScheme: 'blues',
@@ -78,13 +79,17 @@ export const useVisualizationStore = defineStore('visualization', {
     setNormalization(normalization: 'none' | 'row' | 'column' | 'global') {
       this.settings.normalization = normalization
     },
-    setMatrixCellDimension(dimension: number) {
-      this.config.matrixCellDimension = dimension
-      this.settings.cellSize = dimension
-    },
-    setCellSize(size: number) {
-      this.settings.cellSize = size
+    setMatrixCellDimension(size: number) {
       this.config.matrixCellDimension = size
+      this.settings.cellSize = size
+
+      if (size < 18) {
+        this.config.labelSize = 10
+      } else if (size < 28) {
+        this.config.labelSize = 12
+      } else {
+        this.config.labelSize = 14
+      }
     },
     calculateAndSetOptimalLabelRotation(columnNames: string[], cellSize?: number) {
       const optimalRotation = calculateOptimalLabelRotation(

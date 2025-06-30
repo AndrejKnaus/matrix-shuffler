@@ -55,6 +55,7 @@ const exportAsSVG = () => {
   const encoding = visualizationStore.config.encoding || 'circle'
   const cellSize = visualizationStore.config.matrixCellDimension || 40
   const cellSpacing = visualizationStore.config.matrixCellSpacing || 2
+  const fontSize = visualizationStore.config.labelSize || 14
   const labelRotation = visualizationStore.settings.labelRotation || 0
   const minColor = visualizationStore.settings.minColor || '#e3f0fb'
   const maxColor = visualizationStore.settings.maxColor || '#7daee6'
@@ -65,6 +66,7 @@ const exportAsSVG = () => {
     labelRotation,
     minColor,
     maxColor,
+    fontSize,
   })
   const blob = new Blob([svg], { type: 'image/svg+xml' })
   const url = URL.createObjectURL(blob)

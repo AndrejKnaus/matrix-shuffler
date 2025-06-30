@@ -49,6 +49,7 @@ defineExpose({
       :matrixData="matrixData"
       :width="visualizationStore.config.width"
       :height="visualizationStore.config.height"
+      :label-size="visualizationStore.config.labelSize"
     />
     <div v-else class="no-data-container">
       <svg width="64" height="64" viewBox="0 0 64 64" aria-hidden="true" class="no-data-icon">

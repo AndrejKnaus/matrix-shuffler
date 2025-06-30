@@ -10,6 +10,7 @@ interface MatrixProps {
   matrixData: MatrixData
   width: number
   height: number
+  labelSize: number
 }
 
 interface ExtendedContainer extends Container {
@@ -21,6 +22,7 @@ interface ExtendedContainer extends Container {
 const props = withDefaults(defineProps<MatrixProps>(), {
   cellSize: 40,
   padding: 2,
+  labelSize: 14,
 })
 
 const visualizationStore = useVisualizationStore()
@@ -429,6 +431,7 @@ const renderMatrix = (cellSize: number, padding: number, container: Container) =
   }
 
   let maxLabelWidth = 0
+  console.log('label size', props.labelSize)
   const tempLabels: BitmapText[] = []
   for (let row = 0; row < props.matrixData.rowNames.length; row++) {
     const tempLabel = new BitmapText({
@@ -436,7 +439,7 @@ const renderMatrix = (cellSize: number, padding: number, container: Container) =
       style: {
         fontFamily: 'Arial',
         align: 'left',
-        fontSize: 14,
+        fontSize: props.labelSize,
         fill: '#000000',
       },
     })
@@ -462,7 +465,7 @@ const renderMatrix = (cellSize: number, padding: number, container: Container) =
       style: {
         fontFamily: 'Arial',
         align: 'left',
-        fontSize: 14,
+        fontSize: props.labelSize,
         fill: '#000000',
       },
     })
@@ -674,7 +677,7 @@ const createColorTextCell = (
     style: {
       fontFamily: 'Arial',
       align: 'center',
-      fontSize: 14,
+      fontSize: props.labelSize,
       fill: '#000000',
     },
   })
