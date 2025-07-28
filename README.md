@@ -52,6 +52,8 @@ Create a production build:
 pnpm build
 ```
 
+The web build outputs to the `dist/` folder, which contains all the files needed for web deployment.
+
 ## Tauri Setup
 
 To use Tauri for building native desktop applications, follow these steps:
@@ -104,10 +106,15 @@ pnpm tauri dev
 To create a production desktop build:
 
 ```bash
-pnpm tauri build
+pnpm tauri:build
 ```
 
-For more details, see the [Tauri documentation](https://tauri.app/v1/guides/getting-started/).
+The Tauri build outputs native executables to the `src-tauri/target/release/` folder:
+- **Windows**: `src-tauri/target/release/matrix-shuffler.exe`
+- **macOS**: `src-tauri/target/release/matrix-shuffler`
+- **Linux**: `src-tauri/target/release/matrix-shuffler`
+
+> **Note**: This skips installer creation of DMG, MSI, AppImage for faster builds. If you need installers, use `pnpm tauri build` instead.
 
 ## IDE Setup
 
