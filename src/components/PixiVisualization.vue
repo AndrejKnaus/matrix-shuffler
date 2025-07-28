@@ -2,6 +2,7 @@
 import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { Application, Container, Graphics, BitmapText, FederatedPointerEvent } from 'pixi.js'
 import { useVisualizationStore } from '../stores/visualization'
+import { useDatasetStore } from '../stores/dataset'
 import { type MatrixCell, type MatrixData } from '@/stores/dataset'
 
 interface MatrixProps {
@@ -148,11 +149,11 @@ const setupDragHandling = (cellSize: number, padding: number) => {
         if (dragState.value.isDragging || !app.value) return
 
         if (isPanning.value) {
-          //event.stopPropagation()
           return
         }
 
         event.preventDefault?.()
+        event.stopPropagation?.()
 
         dragState.value = {
           isDragging: true,
@@ -167,8 +168,10 @@ const setupDragHandling = (cellSize: number, padding: number) => {
           selectedCells: [],
         }
 
+        isPanning.value = false
         app.value.stage.eventMode = 'static'
         app.value.stage.hitArea = app.value.screen
+        app.value.stage.cursor = 'grabbing'
 
         const onPointerMove = (moveEvent: FederatedPointerEvent) => {
           if (!dragState.value.isDragging) return
@@ -240,8 +243,23 @@ const setupDragHandling = (cellSize: number, padding: number) => {
           document.removeEventListener('mouseup', documentMouseUp)
           document.removeEventListener('touchend', documentMouseUp)
 
+          if (app.value) {
+            if (isPanning.value) {
+              app.value.stage.eventMode = 'static'
+              app.value.stage.cursor = 'grab'
+            } else {
+              app.value.stage.eventMode = 'auto'
+              app.value.stage.cursor = 'default'
+            }
+          }
           resetCellPositions(cellSize, padding)
           resetColumnLabelPositions(cellSize, padding)
+
+          setTimeout(() => {
+            if (app.value && app.value.stage.children.length > 0 && !dragState.value.isDragging) {
+              centerContainer(app.value.stage.children[0] as Container)
+            }
+          }, 50)
         }
 
         const onPointerUp = () => {
@@ -329,6 +347,12 @@ const handleRowDrag = (dy: number, cellSize: number, padding: number) => {
     // eslint-disable-next-line vue/no-mutating-props
     props.matrixData.values.splice(currentRowIndex, 0, removedData)
 
+    const datasetStore = useDatasetStore()
+    const newRowOrder = [...datasetStore.rowOrder]
+    const removedRowIndex = newRowOrder.splice(dragState.value.originalRowIndex, 1)[0]
+    newRowOrder.splice(currentRowIndex, 0, removedRowIndex)
+    datasetStore.setRowOrder(newRowOrder)
+
     updateCellIndices()
 
     dragState.value.originalRowIndex = currentRowIndex
@@ -379,6 +403,12 @@ const handleColumnDrag = (dx: number, cellSize: number, padding: number) => {
       cellContainers.value[r].splice(currentColIndex, 0, removedCell)
       removedCell.colIndex = currentColIndex
     }
+
+    const datasetStore = useDatasetStore()
+    const newColumnOrder = [...datasetStore.columnOrder]
+    const removedColumnIndex = newColumnOrder.splice(dragState.value.originalColIndex, 1)[0]
+    newColumnOrder.splice(currentColIndex, 0, removedColumnIndex)
+    datasetStore.setColumnOrder(newColumnOrder)
 
     const removedLabel = columnLabelObjects.value.splice(dragState.value.originalColIndex, 1)[0]
     columnLabelObjects.value.splice(currentColIndex, 0, removedLabel)
@@ -700,18 +730,19 @@ const createCircleColor = (
   const borderColor = getInterpolatedColor(alpha)
   const fillColor = getInterpolatedColor(alpha)
   rect.setStrokeStyle({ width: 1, color: borderColor })
-  rect.fill({ color: fillColor, alpha: alpha })
+  rect.fill({ color: fillColor, alpha: alpha * 0.6 })
   rect.rect(0, 0, cellSize, cellSize)
   rect.endFill()
 
   const valueIndicator = new Graphics()
   const circleColor = getInterpolatedColor(normalizedValue)
   valueIndicator.fill({ color: circleColor, alpha: 0.9 })
-  valueIndicator.circle(cellSize / 2, cellSize / 2, normalizedValue * (cellSize / 3))
+  const circleRadius = Math.max(normalizedValue * (cellSize / 2.5), cellSize / 8)
+  valueIndicator.circle(cellSize / 2, cellSize / 2, circleRadius)
   valueIndicator.endFill()
 
-  cell.addChild(valueIndicator)
   cell.addChild(rect)
+  cell.addChild(valueIndicator)
 }
 
 const centerContainer = (container: Container) => {
@@ -857,7 +888,7 @@ const resizePixi = () => {
 
     app.value.renderer.resize(width, height)
 
-    if (app.value.stage.children.length > 0) {
+    if (app.value.stage.children.length > 0 && !dragState.value.isDragging) {
       centerContainer(app.value.stage.children[0] as Container)
     }
   }, 100)
@@ -882,7 +913,10 @@ onMounted(async () => {
   }
 
   window.addEventListener('keydown', (e) => {
-    if (e.code === 'Space') isPanning.value = true
+    if (e.code === 'Space') {
+      e.preventDefault()
+      isPanning.value = true
+    }
     if (e.code === 'KeyR') {
       if (app.value && app.value.stage.children.length > 0) {
         centerContainer(app.value.stage.children[0] as Container)
@@ -890,14 +924,16 @@ onMounted(async () => {
     }
   })
   window.addEventListener('keyup', (e) => {
-    if (e.code === panModifier) isPanning.value = false
+    if (e.code === panModifier) {
+      isPanning.value = false
+    }
   })
 })
 
 watch(
   () => props.matrixData,
   (newVal) => {
-    if (newVal && app.value) {
+    if (newVal && app.value && !dragState.value.isDragging) {
       createMatrixVisualization()
     }
   },
@@ -907,7 +943,7 @@ watch(
 watch(
   () => visualizationStore.config.encoding,
   (newVal) => {
-    if (newVal && app.value) {
+    if (newVal && app.value && !dragState.value.isDragging) {
       createMatrixVisualization()
     }
   },
@@ -917,7 +953,7 @@ watch(
 watch(
   () => visualizationStore.settings,
   (newVal) => {
-    if (newVal && app.value) {
+    if (newVal && app.value && !dragState.value.isDragging) {
       createMatrixVisualization()
     }
   },
@@ -927,7 +963,7 @@ watch(
 watch(
   () => props.matrixData.values,
   (newVal) => {
-    if (newVal && app.value) {
+    if (newVal && app.value && !dragState.value.isDragging) {
       createMatrixVisualization()
     }
   },
@@ -935,7 +971,7 @@ watch(
 )
 
 function onPanPointerDown(e: FederatedPointerEvent) {
-  if (!isPanning.value || !app.value) return
+  if (!isPanning.value || !app.value || dragState.value.isDragging) return
   const container = app.value.stage.children[0] as Container
   panStart = { x: e.global.x, y: e.global.y }
   containerStart = { x: container.x, y: container.y }

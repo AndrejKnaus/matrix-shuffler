@@ -73,7 +73,7 @@
       <div class="setting-group">
         <h3 class="settings-heading">Cell Size</h3>
         <label>
-          Cell Dimension: {{ localSettings.cellSize }}px
+          Cell Dimension: {{ localSettings.cellSize }}
           <input
             type="range"
             min="10"
@@ -84,9 +84,9 @@
           />
         </label>
         <div class="cell-size-controls">
-          <button @click="setCellSize(10)" class="btn-preset">10px</button>
-          <button @click="setCellSize(20)" class="btn-preset">20px</button>
-          <button @click="setCellSize(40)" class="btn-preset">40px</button>
+          <button @click="setCellSize(10)" class="btn-preset">10</button>
+          <button @click="setCellSize(20)" class="btn-preset">20</button>
+          <button @click="setCellSize(40)" class="btn-preset">40</button>
         </div>
       </div>
 

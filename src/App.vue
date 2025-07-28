@@ -86,6 +86,14 @@ const handleTranspose = () => {
   dataTableRef.value?.transposeData()
 }
 
+const resetDataOrder = () => {
+  datasetStore.resetOrder()
+}
+
+const apply2DSort = () => {
+  datasetStore.twoDimSort()
+}
+
 const handleCSVImport = (event: Event) => {
   const target = event.target as HTMLInputElement
   const file = target.files?.[0]
@@ -124,12 +132,12 @@ const handleCSVImport = (event: Event) => {
 
 const exampleDatasets = [
   { name: 'appropriateness.csv', path: './examples/appropriateness.csv' },
-  { name: 'bertin_hotel.csv', path: './examples/bertin_hotel.csv' },
-  { name: 'bertin_navy.csv', path: './examples/bertin_navy.csv' },
-  { name: 'bertin_towns.csv', path: './examples/bertin_towns.csv' },
-  { name: 'european_values.csv', path: './examples/european_values.csv' },
-  { name: 'sample_data.csv', path: './examples/sample_data.csv' },
-  { name: 'test_data.csv', path: './examples/test_data.csv' },
+  { name: 'bertin-hotel.csv', path: './examples/bertin_hotel.csv' },
+  { name: 'bertin-navy.csv', path: './examples/bertin_navy.csv' },
+  { name: 'bertin-towns.csv', path: './examples/bertin_towns.csv' },
+  { name: 'european-values.csv', path: './examples/european_values.csv' },
+  { name: 'sample-data.csv', path: './examples/sample_data.csv' },
+  { name: 'test-data.csv', path: './examples/test_data.csv' },
 ]
 
 const openExampleModal = () => {
@@ -260,7 +268,7 @@ const closeHowToUseModal = () => {
             <a href="#" class="dropbtn">View</a>
             <div class="dropdown-content">
               <a href="#" @click.prevent="changeEncoding('circle')">Display as Circles</a>
-              <a href="#" @click.prevent="changeEncoding('color')">Display as Colors</a>
+              <a href="#" @click.prevent="changeEncoding('color')">Display as Rectangles</a>
               <a href="#" @click.prevent="changeEncoding('circle-color')"
                 >Display as Circle+Color</a
               >
@@ -270,8 +278,8 @@ const closeHowToUseModal = () => {
           <li class="dropdown">
             <a href="#" class="dropbtn">Actions</a>
             <div class="dropdown-content">
-              <a href="#">Reset Data Order</a>
-              <a href="#">Apply Reordering Algorithm</a>
+              <a href="#" @click.prevent="resetDataOrder">Reset Data Order</a>
+              <a href="#" @click.prevent="apply2DSort">2D Sort</a>
               <a href="#" @click.prevent="handleTranspose">Transpose Matrix</a>
             </div>
           </li>
@@ -421,9 +429,10 @@ const closeHowToUseModal = () => {
             >Created as part of the Information Visualisation course at Graz University of
             Technology (Technische Universität Graz).</strong
           ><br /><br />
-          Created by Andrej Knaus, Esma Karic, and Laura Thaçi.<br />
+          Created by Andrej Knaus, Esma Karic, and Laura Thaçi.<br /><br />
+          <strong>GitHub Repository:</strong><br />
           <a href="https://github.com/AndrejKnaus/matrix-shuffler" target="_blank" rel="noopener"
-            >Project on GitHub</a
+            >https://github.com/AndrejKnaus/matrix-shuffler</a
           >
         </p>
       </div>
